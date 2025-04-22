@@ -131,13 +131,15 @@ with st.sidebar:
     st.markdown("<h2 style='color: #154273; font-size: 1.5rem; margin-bottom: 1rem;'>Input Parameters</h2>", unsafe_allow_html=True)
 
     st.markdown("<h3 style='color: #154273; font-size: 1.2rem; margin-top: 1rem;'>Wegdek Specificaties</h3>", unsafe_allow_html=True)
-    opp_m2 = st.number_input("Oppervlakte wegdek ZOAB (m²)", min_value=100, value=70000, step=100)
+    opp_m2 = st.number_input("Oppervlakte wegdek per rijbaan (m²)", min_value=100, value=70000, step=100)
     type_wegdek = st.selectbox("Type wegdek", ["1L-ZOAB", "2L-ZOAB"])
-    locatie = st.selectbox("Locatie", ["Linker rijweg", "Rechter rijweg"])
+    aantal_rijbanen = st.slider("Aantal rijbanen", min_value=1, max_value=8, value=2)
     leeftijd_asfalt = st.slider("Leeftijd huidig asfalt (jaar)", min_value=0, max_value=6, value=0)
     jaren = st.slider("Duur simulatieperiode (jaren)", min_value=10, max_value=100, value=45)
 
     st.markdown("<h3 style='color: #154273; font-size: 1.2rem; margin-top: 1rem;'>Kostenparameters</h3>", unsafe_allow_html=True)
+    vaste_kosten = st.number_input("Vaste begeleidingskosten per behandeling (€)", min_value=0, value=200000, step=1000)
+
     with st.expander("Conventionele Aanpak", expanded=True):
         kost_asfalt = st.number_input("Materiaal kosten asfalt (€/m²)", value=15.0)
         kost_hinder_asfalt = st.number_input("Verkeershinderkosten asfalt (€/m²)", value=7.0)
@@ -146,53 +148,59 @@ with st.sidebar:
         kost_lvov = st.number_input("Materiaal kosten LVOv (€/m²)", value=2.5)
         kost_hinder_lvov = st.number_input("Verkeershinderkosten LVOv (€/m²)", value=1.5)
 
-def bepaal_levensduur(type_wegdek, locatie):
+# Levensduur per rijbaan (om en om rechts/links)
+def bepaal_levensduur(type_wegdek, is_rechter):
     matrix = {
-        ("1L-ZOAB", "Linker rijweg"): 17,
-        ("1L-ZOAB", "Rechter rijweg"): 11,
-        ("2L-ZOAB", "Linker rijweg"): 13,
-        ("2L-ZOAB", "Rechter rijweg"): 9
+        ("1L-ZOAB", True): 11,
+        ("1L-ZOAB", False): 17,
+        ("2L-ZOAB", True): 9,
+        ("2L-ZOAB", False): 13
     }
-    return matrix.get((type_wegdek, locatie), 10)
-
-levensduur = bepaal_levensduur(type_wegdek, locatie)
-kosten_asfalt = (kost_asfalt + kost_hinder_asfalt) * opp_m2
-kosten_lvov = (kost_lvov + kost_hinder_lvov) * opp_m2
-co2_asfalt = 5 * opp_m2 / 1000
-co2_lvov = 1.5 * opp_m2 / 1000
+    return matrix.get((type_wegdek, is_rechter), 10)
 
 kosten_conv = np.zeros(jaren + 1)
 kosten_lvov_arr = np.zeros(jaren + 1)
 co2_conv = np.zeros(jaren + 1)
 co2_lvov_arr = np.zeros(jaren + 1)
 
-# ==== CONVENTIONELE STRATEGIE ====
-i = levensduur
-while i <= jaren:
-    kosten_conv[i] = kosten_asfalt
-    co2_conv[i] = co2_asfalt
-    i += levensduur
+# Simuleer per rijbaan
+for rijbaan in range(aantal_rijbanen):
+    is_rechter = rijbaan == 0  # 1e rijbaan is rechter, daarna links
+    levensduur = bepaal_levensduur(type_wegdek, is_rechter)
 
-# ==== LVOv STRATEGIE ====
-i = 6 - leeftijd_asfalt  # Eerste LVOv wanneer huidig asfalt 6 jaar oud wordt
-levensduur_huidig = levensduur
+    kosten_asfalt = (kost_asfalt + kost_hinder_asfalt) * opp_m2
+    kosten_lvov = (kost_lvov + kost_hinder_lvov) * opp_m2
+    co2_asfalt = 5 * opp_m2 / 1000
+    co2_lvov = 1.5 * opp_m2 / 1000
 
-while i <= jaren:
-    kosten_lvov_arr[i] = kosten_lvov
-    co2_lvov_arr[i] = co2_lvov
-    jaar_vervanging = i + levensduur_huidig
-    if jaar_vervanging <= jaren:
-        kosten_lvov_arr[jaar_vervanging] = kosten_asfalt
-        co2_lvov_arr[jaar_vervanging] = co2_asfalt
-        levensduur_huidig = levensduur + 3
-        i = jaar_vervanging + 6
-    else:
-        break
+    # ==== CONVENTIONELE STRATEGIE ====
+    i = levensduur - leeftijd_asfalt
+    while i <= jaren:
+        kosten_conv[i] += kosten_asfalt + vaste_kosten
+        co2_conv[i] += co2_asfalt
+        i += levensduur
+
+    # ==== LVOv STRATEGIE ====
+    i = 6 - leeftijd_asfalt
+    levensduur_huidig = levensduur
+    while i <= jaren:
+        kosten_lvov_arr[i] += kosten_lvov + vaste_kosten
+        co2_lvov_arr[i] += co2_lvov
+        jaar_vervanging = i + levensduur_huidig
+        if jaar_vervanging <= jaren:
+            kosten_lvov_arr[jaar_vervanging] += kosten_asfalt + vaste_kosten
+            co2_lvov_arr[jaar_vervanging] += co2_asfalt
+            levensduur_huidig = levensduur + 3
+            i = jaar_vervanging + 6
+        else:
+            break
 
 kosten_conv_cum = np.cumsum(kosten_conv)
 kosten_lvov_cum = np.cumsum(kosten_lvov_arr)
 co2_conv_cum = np.cumsum(co2_conv)
 co2_lvov_cum = np.cumsum(co2_lvov_arr)
+
+# ==== Resultaten & Visualisatie ====
 
 st.title("Analysetool Asfaltonderhoud ZOAB-wegdek")
 
