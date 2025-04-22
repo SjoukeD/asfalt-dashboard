@@ -228,10 +228,30 @@ components.html(f"""
             font-size: 1rem;
             margin: 0.4rem 0;
             font-family: Arial, sans-serif;
-        
+        ">
+            <strong>Type wegdek:</strong> {type_wegdek} |
+            <strong>Rijbanen:</strong> {aantal_rijbanen} |
+            <strong>Opp./rijbaan:</strong> {opp_m2:,} m²
+        </p>
+        <p style="
+            color: #535353;
+            font-size: 1rem;
+            margin: 0.4rem 0;
+            font-family: Arial, sans-serif;
+        ">
+            <strong>Leeftijd asfalt:</strong> {leeftijd_asfalt} jaar |
+            <strong>Simulatieduur:</strong> {jaren} jaar
+        </p>
+        <p style="
+            color: #535353;
+            font-size: 1rem;
+            margin: 0.4rem 0;
+            font-family: Arial, sans-serif;
+        ">
+            <strong>Vaste kosten per behandeling:</strong> €{vaste_kosten:,}
         </p>
     </div>
-""", height=180)
+""", height=200)
 
 
 
