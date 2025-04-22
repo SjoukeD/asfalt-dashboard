@@ -125,7 +125,7 @@ st.markdown("""
 
 
 
-# ==== SIDEBAR PARAMETERS ====
+# ==== SIDEBAR PARAMETERS ===
 with st.sidebar:
     st.image("NIEUW-RWS-3488526-v1-logo_RWS_ministerie_Infrastructuur_en_Waterstaat_NL.png", width=300)
     st.markdown("<h2 style='color: #154273; font-size: 1.5rem; margin-bottom: 1rem;'>Input Parameters</h2>", unsafe_allow_html=True)
