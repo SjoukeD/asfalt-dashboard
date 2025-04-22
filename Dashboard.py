@@ -193,22 +193,26 @@ class Rijbaan:
         self.resterende_levensduur = levensduur
         self.laatste_lvo = jaar_start - 6  # zodat eerste LVOv op jaar_start + 6 mag
         self.jaar_laatste_vervanging = jaar_start
+        self.opp_m2 = opp_m2
 
     def behandel_jaar(self, jaar, kosten_lvov_arr, kosten_conv, co2_lvov_arr, co2_conv,
-                      kosten_asfalt, kosten_lvov, co2_asfalt, co2_lvov, vaste_kosten):
+                      kost_asfalt, kost_lvov, co2_asfalt_per_m2, co2_lvov_per_m2, vaste_kosten):
 
-        # Check conventionele vervanging
+        totaal_kost_asfalt = (kost_asfalt) * self.opp_m2 + vaste_kosten
+        totaal_kost_lvov = (kost_lvov) * self.opp_m2 + vaste_kosten
+        totaal_co2_asfalt = co2_asfalt_per_m2 * self.opp_m2
+        totaal_co2_lvov = co2_lvov_per_m2 * self.opp_m2
+
         if self.resterende_levensduur <= 0:
-            kosten_conv[jaar] += kosten_asfalt + vaste_kosten
-            co2_conv[jaar] += co2_asfalt
+            kosten_conv[jaar] += totaal_kost_asfalt
+            co2_conv[jaar] += totaal_co2_asfalt
             self.resterende_levensduur = self.levensduur_initieel
-            self.laatste_lvo = jaar  # Na vervanging mag LVOv pas weer over 6 jaar
+            self.laatste_lvo = jaar
             self.jaar_laatste_vervanging = jaar
 
-        # Check LVOv (na 6 jaar sinds aanleg of laatste vervanging)
         elif jaar - self.laatste_lvo >= 6:
-            kosten_lvov_arr[jaar] += kosten_lvov + vaste_kosten
-            co2_lvov_arr[jaar] += co2_lvov
+            kosten_lvov_arr[jaar] += totaal_kost_lvov
+            co2_lvov_arr[jaar] += totaal_co2_lvov
             self.resterende_levensduur += 3
             self.laatste_lvo = jaar
 
@@ -223,15 +227,16 @@ for rijbaan in range(aantal_rijbanen):
     levensduur = bepaal_levensduur(type_wegdek, is_rechter)
     rijbanen_obj.append(Rijbaan(is_rechter, levensduur, opp_m2, jaar_start=0))
 
-kosten_asfalt = (kost_asfalt + kost_hinder_asfalt) * opp_m2
-kosten_lvov = (kost_lvov + kost_hinder_lvov) * opp_m2
-co2_asfalt = 5 * opp_m2 / 1000
-co2_lvov = 1.5 * opp_m2 / 1000
-
 kosten_conv = np.zeros(jaren + 1)
 kosten_lvov_arr = np.zeros(jaren + 1)
 co2_conv = np.zeros(jaren + 1)
 co2_lvov_arr = np.zeros(jaren + 1)
+
+# kosten en co2 per m² (zonder vermenigvuldiging vooraf)
+kost_asfalt = kost_asfalt + kost_hinder_asfalt
+kost_lvov = kost_lvov + kost_hinder_lvov
+co2_asfalt_per_m2 = 5 / 1000
+co2_lvov_per_m2 = 1.5 / 1000
 
 for jaar in range(jaren + 1):
     for baan in rijbanen_obj:
@@ -241,10 +246,10 @@ for jaar in range(jaren + 1):
             kosten_conv,
             co2_lvov_arr,
             co2_conv,
-            kosten_asfalt,
-            kosten_lvov,
-            co2_asfalt,
-            co2_lvov,
+            kost_asfalt,
+            kost_lvov,
+            co2_asfalt_per_m2,
+            co2_lvov_per_m2,
             vaste_kosten
         )
 
@@ -252,6 +257,7 @@ kosten_conv_cum = np.cumsum(kosten_conv)
 kosten_lvov_cum = np.cumsum(kosten_lvov_arr)
 co2_conv_cum = np.cumsum(co2_conv)
 co2_lvov_cum = np.cumsum(co2_lvov_arr)
+
 
 # ==== Resultaten & Visualisatie ====
 
