@@ -121,6 +121,26 @@ st.markdown("""
         color: black !important;
     
     }
+/* RWS-stijl knoppen */
+    button[kind="primary"] {
+        background-color: #154273 !important;
+        color: white !important;
+        border-radius: 6px !important;
+        font-weight: bold;
+    }
+
+    /* Sliders achtergrondkleur en stijl */
+    .stSlider > div[data-baseweb="slider"] {
+        background-color: #f2f2f2 !important;
+        padding: 0.2rem;
+        border-radius: 8px;
+    }
+
+    .stSlider span[role="slider"] {
+        background-color: #154273 !important;
+        border: 2px solid #FFD100 !important;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
