@@ -183,44 +183,70 @@ kosten_lvov_arr = np.zeros(jaren + 1)
 co2_conv = np.zeros(jaren + 1)
 co2_lvov_arr = np.zeros(jaren + 1)
 
-# Simuleer per rijbaan
+
+# ====== KLASSEN EN SIMULATIE LOGICA ======
+
+class Rijbaan:
+    def __init__(self, is_rechter, levensduur, opp_m2, jaar_start):
+        self.is_rechter = is_rechter
+        self.levensduur_initieel = levensduur
+        self.resterende_levensduur = levensduur
+        self.laatste_lvo = jaar_start - 6  # zodat eerste LVOv op jaar_start + 6 mag
+        self.jaar_laatste_vervanging = jaar_start
+
+    def behandel_jaar(self, jaar, kosten_lvov_arr, kosten_conv, co2_lvov_arr, co2_conv,
+                      kosten_asfalt, kosten_lvov, co2_asfalt, co2_lvov, vaste_kosten):
+
+        # Check conventionele vervanging
+        if self.resterende_levensduur <= 0:
+            kosten_conv[jaar] += kosten_asfalt + vaste_kosten
+            co2_conv[jaar] += co2_asfalt
+            self.resterende_levensduur = self.levensduur_initieel
+            self.laatste_lvo = jaar  # Na vervanging mag LVOv pas weer over 6 jaar
+            self.jaar_laatste_vervanging = jaar
+
+        # Check LVOv (na 6 jaar sinds aanleg of laatste vervanging)
+        elif jaar - self.laatste_lvo >= 6:
+            kosten_lvov_arr[jaar] += kosten_lvov + vaste_kosten
+            co2_lvov_arr[jaar] += co2_lvov
+            self.resterende_levensduur += 3
+            self.laatste_lvo = jaar
+
+        self.resterende_levensduur -= 1
+
+
+# ====== SIMULATIE PER RIJBAAN MET KLASSE ======
+rijbanen_obj = []
+
 for rijbaan in range(aantal_rijbanen):
-    is_rechter = rijbaan == 0  # 1e rijbaan is rechter, daarna links
+    is_rechter = rijbaan == 0  # eerste is rechter, rest links
     levensduur = bepaal_levensduur(type_wegdek, is_rechter)
+    rijbanen_obj.append(Rijbaan(is_rechter, levensduur, opp_m2, jaar_start=0))
 
-    kosten_asfalt = (kost_asfalt + kost_hinder_asfalt) * opp_m2
-    kosten_lvov = (kost_lvov + kost_hinder_lvov) * opp_m2
-    co2_asfalt = 5 * opp_m2 / 1000
-    co2_lvov = 1.5 * opp_m2 / 1000
+kosten_asfalt = (kost_asfalt + kost_hinder_asfalt) * opp_m2
+kosten_lvov = (kost_lvov + kost_hinder_lvov) * opp_m2
+co2_asfalt = 5 * opp_m2 / 1000
+co2_lvov = 1.5 * opp_m2 / 1000
 
-    huidig_jaar = 0
-    resterende_levensduur = levensduur - leeftijd_asfalt
-    lvov_buffer = 0
+kosten_conv = np.zeros(jaren + 1)
+kosten_lvov_arr = np.zeros(jaren + 1)
+co2_conv = np.zeros(jaren + 1)
+co2_lvov_arr = np.zeros(jaren + 1)
 
-    while huidig_jaar <= jaren:
-        if resterende_levensduur == 0:
-            # Conventionele vervanging
-            kosten_lvov_arr[huidig_jaar] += kosten_asfalt + vaste_kosten
-            co2_lvov_arr[huidig_jaar] += co2_asfalt
-            resterende_levensduur = levensduur
-            lvov_buffer = 0
-        elif (levensduur - resterende_levensduur) % 6 == 0:
-            # LVOv behandeling
-            kosten_lvov_arr[huidig_jaar] += kosten_lvov + vaste_kosten
-            co2_lvov_arr[huidig_jaar] += co2_lvov
-            resterende_levensduur += 3
-            lvov_buffer += 3
-
-        resterende_levensduur -= 1
-        huidig_jaar += 1
-
-    # ==== Conventioneel: elke X jaar vervangen ====
-    resterende_conv = levensduur - leeftijd_asfalt
-    jaar = resterende_conv
-    while jaar <= jaren:
-        kosten_conv[jaar] += kosten_asfalt + vaste_kosten
-        co2_conv[jaar] += co2_asfalt
-        jaar += levensduur
+for jaar in range(jaren + 1):
+    for baan in rijbanen_obj:
+        baan.behandel_jaar(
+            jaar,
+            kosten_lvov_arr,
+            kosten_conv,
+            co2_lvov_arr,
+            co2_conv,
+            kosten_asfalt,
+            kosten_lvov,
+            co2_asfalt,
+            co2_lvov,
+            vaste_kosten
+        )
 
 kosten_conv_cum = np.cumsum(kosten_conv)
 kosten_lvov_cum = np.cumsum(kosten_lvov_arr)
