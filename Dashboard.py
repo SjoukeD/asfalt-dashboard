@@ -193,27 +193,34 @@ for rijbaan in range(aantal_rijbanen):
     co2_asfalt = 5 * opp_m2 / 1000
     co2_lvov = 1.5 * opp_m2 / 1000
 
-    # ==== CONVENTIONELE STRATEGIE ====
-    i = levensduur - leeftijd_asfalt
-    while i <= jaren:
-        kosten_conv[i] += kosten_asfalt + vaste_kosten
-        co2_conv[i] += co2_asfalt
-        i += levensduur
+    huidig_jaar = 0
+    resterende_levensduur = levensduur - leeftijd_asfalt
+    lvov_buffer = 0
 
-    # ==== LVOv STRATEGIE ====
-    i = 6 - leeftijd_asfalt
-    levensduur_huidig = levensduur
-    while i <= jaren:
-        kosten_lvov_arr[i] += kosten_lvov + vaste_kosten
-        co2_lvov_arr[i] += co2_lvov
-        jaar_vervanging = i + levensduur_huidig
-        if jaar_vervanging <= jaren:
-            kosten_lvov_arr[jaar_vervanging] += kosten_asfalt + vaste_kosten
-            co2_lvov_arr[jaar_vervanging] += co2_asfalt
-            levensduur_huidig = levensduur + 3
-            i = jaar_vervanging + 6
-        else:
-            break
+    while huidig_jaar <= jaren:
+        if resterende_levensduur == 0:
+            # Conventionele vervanging
+            kosten_lvov_arr[huidig_jaar] += kosten_asfalt + vaste_kosten
+            co2_lvov_arr[huidig_jaar] += co2_asfalt
+            resterende_levensduur = levensduur
+            lvov_buffer = 0
+        elif (levensduur - resterende_levensduur) % 6 == 0:
+            # LVOv behandeling
+            kosten_lvov_arr[huidig_jaar] += kosten_lvov + vaste_kosten
+            co2_lvov_arr[huidig_jaar] += co2_lvov
+            resterende_levensduur += 3
+            lvov_buffer += 3
+
+        resterende_levensduur -= 1
+        huidig_jaar += 1
+
+    # ==== Conventioneel: elke X jaar vervangen ====
+    resterende_conv = levensduur - leeftijd_asfalt
+    jaar = resterende_conv
+    while jaar <= jaren:
+        kosten_conv[jaar] += kosten_asfalt + vaste_kosten
+        co2_conv[jaar] += co2_asfalt
+        jaar += levensduur
 
 kosten_conv_cum = np.cumsum(kosten_conv)
 kosten_lvov_cum = np.cumsum(kosten_lvov_arr)
