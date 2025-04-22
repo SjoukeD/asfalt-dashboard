@@ -119,12 +119,59 @@ st.markdown("""
         border-radius: 0.5rem;
         margin-bottom: 1rem;
         color: black !important;
+    
     }
 </style>
 """, unsafe_allow_html=True)
 
 
 
+components.html(f"""
+    <div style="
+        background-color: #f2f2f2;
+        padding: 1.5rem;
+        border-radius: 0.5rem;
+        border: 1px solid #e0e0e0;
+        font-family: Arial, sans-serif;
+    ">
+        <h3 style="
+            color: #154273;
+            margin-top: 0;
+            margin-bottom: 0.8rem;
+            font-size: 1.6rem;
+            font-family: Arial, sans-serif;
+        ">
+            Huidige configuratie
+        </h3>
+        <p style="
+            color: #535353;
+            font-size: 1rem;
+            margin: 0.4rem 0;
+            font-family: Arial, sans-serif;
+        ">
+            <strong>Type wegdek:</strong> {type_wegdek} |
+            <strong>Rijbanen:</strong> {aantal_rijbanen} |
+            <strong>Opp./rijbaan:</strong> {opp_m2:,} m²
+        </p>
+        <p style="
+            color: #535353;
+            font-size: 1rem;
+            margin: 0.4rem 0;
+            font-family: Arial, sans-serif;
+        ">
+            <strong>Leeftijd asfalt:</strong> {leeftijd_asfalt} jaar |
+            <strong>Simulatieduur:</strong> {jaren} jaar
+        </p>
+        <p style="
+            color: #535353;
+            font-size: 1rem;
+            margin: 0.4rem 0;
+            font-family: Arial, sans-serif;
+        ">
+            <strong>Vaste kosten per behandeling:</strong> €{vaste_kosten:,}
+        </p>
+    </div>
+""", height=200)
 # ==== SIDEBAR PARAMETERS ===
 with st.sidebar:
     st.image("NIEUW-RWS-3488526-v1-logo_RWS_ministerie_Infrastructuur_en_Waterstaat_NL.png", width=300)
