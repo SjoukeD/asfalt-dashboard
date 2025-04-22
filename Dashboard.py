@@ -219,6 +219,41 @@ class Rijbaan:
         self.resterende_levensduur -= 1
 
 
+# ====== KLASSEN EN SIMULATIE LOGICA ======
+
+class Rijbaan:
+    def __init__(self, is_rechter, levensduur, opp_m2, jaar_start):
+        self.is_rechter = is_rechter
+        self.levensduur_initieel = levensduur
+        self.resterende_levensduur = levensduur
+        self.laatste_lvo = jaar_start - 6  # zodat eerste LVOv op jaar_start + 6 mag
+        self.jaar_laatste_vervanging = jaar_start
+        self.opp_m2 = opp_m2
+
+    def behandel_jaar(self, jaar, kosten_lvov_arr, kosten_conv, co2_lvov_arr, co2_conv,
+                      kost_asfalt, kost_lvov, co2_asfalt_per_m2, co2_lvov_per_m2, vaste_kosten):
+
+        totaal_kost_asfalt = (kost_asfalt) * self.opp_m2 + vaste_kosten
+        totaal_kost_lvov = (kost_lvov) * self.opp_m2 + vaste_kosten
+        totaal_co2_asfalt = co2_asfalt_per_m2 * self.opp_m2
+        totaal_co2_lvov = co2_lvov_per_m2 * self.opp_m2
+
+        if self.resterende_levensduur <= 0:
+            kosten_conv[jaar] += totaal_kost_asfalt
+            co2_conv[jaar] += totaal_co2_asfalt
+            self.resterende_levensduur = self.levensduur_initieel
+            self.laatste_lvo = jaar
+            self.jaar_laatste_vervanging = jaar
+
+        elif jaar - self.laatste_lvo >= 6:
+            kosten_lvov_arr[jaar] += totaal_kost_lvov
+            co2_lvov_arr[jaar] += totaal_co2_lvov
+            self.resterende_levensduur += 3
+            self.laatste_lvo = jaar
+
+        self.resterende_levensduur -= 1
+
+
 # ====== SIMULATIE PER RIJBAAN MET KLASSE ======
 rijbanen_obj = []
 
