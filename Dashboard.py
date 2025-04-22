@@ -228,20 +228,7 @@ components.html(f"""
             font-size: 1rem;
             margin: 0.4rem 0;
             font-family: Arial, sans-serif;
-        ">
-            <strong>Wegdek:</strong> {type_wegdek} |
-            <strong>Locatie:</strong> {locatie} |
-            <strong>Oppervlakte:</strong> {opp_m2:,} m²
-        </p>
-        <p style="
-            color: #535353;
-            font-size: 1rem;
-            margin: 0.4rem 0;
-            font-family: Arial, sans-serif;
-        ">
-            <strong>Leeftijd huidig asfalt:</strong> {leeftijd_asfalt} jaar |
-            <strong>Simulatieduur:</strong> {jaren} jaar |
-            <strong>Levensduur:</strong> {levensduur} jaar
+        
         </p>
     </div>
 """, height=180)
