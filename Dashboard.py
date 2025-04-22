@@ -226,7 +226,7 @@ class Rijbaan:
         self.is_rechter = is_rechter
         self.levensduur_initieel = levensduur
         self.resterende_levensduur = levensduur
-        self.laatste_lvo = jaar_start  # LVOv pas toegestaan vanaf jaar_start + 6
+        self.laatste_lvo = jaar_start  # LVOv mag pas vanaf jaar_start + 6
         self.jaar_laatste_vervanging = jaar_start
         self.opp_m2 = opp_m2
 
@@ -238,22 +238,24 @@ class Rijbaan:
         totaal_co2_asfalt = co2_asfalt_per_m2 * self.opp_m2
         totaal_co2_lvov = co2_lvov_per_m2 * self.opp_m2
 
-        # Eerst behandelen, dan levensduur verminderen
+        # Eerst behandelen, dan aftellen
+
+        # Conventionele vervanging als levensduur op is
         if self.resterende_levensduur <= 0:
-            # Conventionele vervanging
             kosten_conv[jaar] += totaal_kost_asfalt
             co2_conv[jaar] += totaal_co2_asfalt
             self.resterende_levensduur = self.levensduur_initieel
             self.laatste_lvo = jaar
             self.jaar_laatste_vervanging = jaar
 
+        # LVOv-behandeling vanaf jaar 6 na aanleg/vervanging
         elif jaar - self.laatste_lvo >= 6 and jaar > 0:
-            # LVOv-behandeling
             kosten_lvov_arr[jaar] += totaal_kost_lvov
             co2_lvov_arr[jaar] += totaal_co2_lvov
             self.resterende_levensduur += 3
             self.laatste_lvo = jaar
 
+        # Daarna levensduur verouderen
         self.resterende_levensduur -= 1
 
 
@@ -262,7 +264,7 @@ class Rijbaan:
 rijbanen_obj = []
 
 for rijbaan in range(aantal_rijbanen):
-    is_rechter = rijbaan == 0  # alleen eerste rijbaan is rechterbaan
+    is_rechter = rijbaan == 0  # enkel eerste rijbaan is rechts
     levensduur = bepaal_levensduur(type_wegdek, is_rechter)
     rijbanen_obj.append(Rijbaan(is_rechter, levensduur, opp_m2, jaar_start=0))
 
@@ -271,7 +273,7 @@ kosten_lvov_arr = np.zeros(jaren + 1)
 co2_conv = np.zeros(jaren + 1)
 co2_lvov_arr = np.zeros(jaren + 1)
 
-# kosten en CO₂ per m²
+# Kosten en CO₂ per m²
 kost_asfalt = kost_asfalt + kost_hinder_asfalt
 kost_lvov = kost_lvov + kost_hinder_lvov
 co2_asfalt_per_m2 = 5 / 1000
@@ -296,6 +298,7 @@ kosten_conv_cum = np.cumsum(kosten_conv)
 kosten_lvov_cum = np.cumsum(kosten_lvov_arr)
 co2_conv_cum = np.cumsum(co2_conv)
 co2_lvov_cum = np.cumsum(co2_lvov_arr)
+
 
 # ==== Resultaten & Visualisatie ====
 
