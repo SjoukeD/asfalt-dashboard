@@ -119,47 +119,25 @@ st.markdown("""
         border-radius: 0.5rem;
         margin-bottom: 1rem;
         color: black !important;
-    
     }
-/* RWS-stijl knoppen */
-    button[kind="primary"] {
-        background-color: #154273 !important;
-        color: white !important;
-        border-radius: 6px !important;
-        font-weight: bold;
-    }
-
-    /* Sliders achtergrondkleur en stijl */
-    .stSlider > div[data-baseweb="slider"] {
-        background-color: #f2f2f2 !important;
-        padding: 0.2rem;
-        border-radius: 8px;
-    }
-
-    .stSlider span[role="slider"] {
-        background-color: #154273 !important;
-        border: 2px solid #FFD100 !important;
-    }
-
 </style>
 """, unsafe_allow_html=True)
 
 
-# ==== SIDEBAR PARAMETERS ===
+
+# ==== SIDEBAR PARAMETERS ====
 with st.sidebar:
     st.image("NIEUW-RWS-3488526-v1-logo_RWS_ministerie_Infrastructuur_en_Waterstaat_NL.png", width=300)
     st.markdown("<h2 style='color: #154273; font-size: 1.5rem; margin-bottom: 1rem;'>Input Parameters</h2>", unsafe_allow_html=True)
 
     st.markdown("<h3 style='color: #154273; font-size: 1.2rem; margin-top: 1rem;'>Wegdek Specificaties</h3>", unsafe_allow_html=True)
-    opp_m2 = st.number_input("Oppervlakte wegdek per rijbaan (m²)", min_value=100, value=70000, step=100)
+    opp_m2 = st.number_input("Oppervlakte wegdek ZOAB (m²)", min_value=100, value=70000, step=100)
     type_wegdek = st.selectbox("Type wegdek", ["1L-ZOAB", "2L-ZOAB"])
-    aantal_rijbanen = st.slider("Aantal rijbanen", min_value=1, max_value=8, value=2)
+    locatie = st.selectbox("Locatie", ["Linker rijweg", "Rechter rijweg"])
     leeftijd_asfalt = st.slider("Leeftijd huidig asfalt (jaar)", min_value=0, max_value=6, value=0)
     jaren = st.slider("Duur simulatieperiode (jaren)", min_value=10, max_value=100, value=45)
 
     st.markdown("<h3 style='color: #154273; font-size: 1.2rem; margin-top: 1rem;'>Kostenparameters</h3>", unsafe_allow_html=True)
-    vaste_kosten = st.number_input("Vaste begeleidingskosten per behandeling (€)", min_value=0, value=200000, step=1000)
-
     with st.expander("Conventionele Aanpak", expanded=True):
         kost_asfalt = st.number_input("Materiaal kosten asfalt (€/m²)", value=15.0)
         kost_hinder_asfalt = st.number_input("Verkeershinderkosten asfalt (€/m²)", value=7.0)
@@ -168,108 +146,53 @@ with st.sidebar:
         kost_lvov = st.number_input("Materiaal kosten LVOv (€/m²)", value=2.5)
         kost_hinder_lvov = st.number_input("Verkeershinderkosten LVOv (€/m²)", value=1.5)
 
-# Levensduur per rijbaan (om en om rechts/links)
-def bepaal_levensduur(type_wegdek, is_rechter):
+def bepaal_levensduur(type_wegdek, locatie):
     matrix = {
-        ("1L-ZOAB", True): 11,
-        ("1L-ZOAB", False): 17,
-        ("2L-ZOAB", True): 9,
-        ("2L-ZOAB", False): 13
+        ("1L-ZOAB", "Linker rijweg"): 17,
+        ("1L-ZOAB", "Rechter rijweg"): 11,
+        ("2L-ZOAB", "Linker rijweg"): 13,
+        ("2L-ZOAB", "Rechter rijweg"): 9
     }
-    return matrix.get((type_wegdek, is_rechter), 10)
+    return matrix.get((type_wegdek, locatie), 10)
+
+levensduur = bepaal_levensduur(type_wegdek, locatie)
+kosten_asfalt = (kost_asfalt + kost_hinder_asfalt) * opp_m2
+kosten_lvov = (kost_lvov + kost_hinder_lvov) * opp_m2
+co2_asfalt = 5 * opp_m2 / 1000
+co2_lvov = 1.5 * opp_m2 / 1000
 
 kosten_conv = np.zeros(jaren + 1)
 kosten_lvov_arr = np.zeros(jaren + 1)
 co2_conv = np.zeros(jaren + 1)
 co2_lvov_arr = np.zeros(jaren + 1)
 
+# ==== CONVENTIONELE STRATEGIE ====
+i = levensduur
+while i <= jaren:
+    kosten_conv[i] = kosten_asfalt
+    co2_conv[i] = co2_asfalt
+    i += levensduur
 
-# ====== KLASSEN EN SIMULATIE LOGICA ======
+# ==== LVOv STRATEGIE ====
+i = 6 - leeftijd_asfalt  # Eerste LVOv wanneer huidig asfalt 6 jaar oud wordt
+levensduur_huidig = levensduur
 
-class Rijbaan:
-    def __init__(self, is_rechter, levensduur, opp_m2, jaar_start):
-        self.is_rechter = is_rechter
-        self.levensduur_initieel = levensduur
-        self.resterende_levensduur = levensduur
-        self.laatste_lvo = jaar_start - 6  # zodat eerste LVOv op jaar_start + 6 mag
-        self.jaar_laatste_vervanging = jaar_start
-        self.opp_m2 = opp_m2
-
-    def behandel_jaar(self, jaar, kosten_lvov_arr, kosten_conv, co2_lvov_arr, co2_conv,
-                      kost_asfalt, kost_lvov, co2_asfalt_per_m2, co2_lvov_per_m2, vaste_kosten):
-
-        totaal_kost_asfalt = (kost_asfalt) * self.opp_m2 + vaste_kosten
-        totaal_kost_lvov = (kost_lvov) * self.opp_m2 + vaste_kosten
-        totaal_co2_asfalt = co2_asfalt_per_m2 * self.opp_m2
-        totaal_co2_lvov = co2_lvov_per_m2 * self.opp_m2
-
-        if self.resterende_levensduur <= 0:
-            kosten_conv[jaar] += totaal_kost_asfalt
-            co2_conv[jaar] += totaal_co2_asfalt
-            self.resterende_levensduur = self.levensduur_initieel
-            self.laatste_lvo = jaar
-            self.jaar_laatste_vervanging = jaar
-
-        elif jaar - self.laatste_lvo >= 6:
-            kosten_lvov_arr[jaar] += totaal_kost_lvov
-            co2_lvov_arr[jaar] += totaal_co2_lvov
-            self.resterende_levensduur += 3
-            self.laatste_lvo = jaar
-
-        self.resterende_levensduur -= 1
-
-
-# ====== KLASSEN EN SIMULATIE LOGICA ======
-
-class Rijbaan:
-    def __init__(self, is_rechter, levensduur, opp_m2, jaar_start):
-        self.is_rechter = is_rechter
-        self.levensduur_initieel = levensduur
-        self.resterende_levensduur = levensduur
-        self.laatste_lvo = jaar_start  # LVOv mag pas vanaf jaar_start + 6
-        self.jaar_laatste_vervanging = jaar_start
-        self.opp_m2 = opp_m2
-
-    def behandel_jaar(self, jaar, kosten_lvov_arr, kosten_conv, co2_lvov_arr, co2_conv,
-                      kost_asfalt, kost_lvov, co2_asfalt_per_m2, co2_lvov_per_m2, vaste_kosten,
-                      strategie='LVOv'):
-
-        totaal_kost_asfalt = kost_asfalt * self.opp_m2 + vaste_kosten
-        totaal_kost_lvov = kost_lvov * self.opp_m2 + vaste_kosten
-        totaal_co2_asfalt = co2_asfalt_per_m2 * self.opp_m2
-        totaal_co2_lvov = co2_lvov_per_m2 * self.opp_m2
-
-        if strategie == 'conventioneel':
-            # Geen LVOv: gewoon vervangen zodra levensduur op is
-            if self.resterende_levensduur <= 0:
-                kosten_conv[jaar] += totaal_kost_asfalt
-                co2_conv[jaar] += totaal_co2_asfalt
-                self.resterende_levensduur = self.levensduur_initieel
-        else:
-            # Eerst check conventionele vervanging
-            if self.resterende_levensduur <= 0:
-                kosten_conv[jaar] += totaal_kost_asfalt
-                co2_conv[jaar] += totaal_co2_asfalt
-                self.resterende_levensduur = self.levensduur_initieel
-                self.laatste_lvo = jaar
-
-            # Dan pas LVOv als toegestaan
-            elif jaar - self.laatste_lvo >= 6 and jaar > 0:
-                kosten_lvov_arr[jaar] += totaal_kost_lvov
-                co2_lvov_arr[jaar] += totaal_co2_lvov
-                self.resterende_levensduur += 3
-                self.laatste_lvo = jaar
-
-        self.resterende_levensduur -= 1
-
+while i <= jaren:
+    kosten_lvov_arr[i] = kosten_lvov
+    co2_lvov_arr[i] = co2_lvov
+    jaar_vervanging = i + levensduur_huidig
+    if jaar_vervanging <= jaren:
+        kosten_lvov_arr[jaar_vervanging] = kosten_asfalt
+        co2_lvov_arr[jaar_vervanging] = co2_asfalt
+        levensduur_huidig = levensduur + 3
+        i = jaar_vervanging + 6
+    else:
+        break
 
 kosten_conv_cum = np.cumsum(kosten_conv)
 kosten_lvov_cum = np.cumsum(kosten_lvov_arr)
 co2_conv_cum = np.cumsum(co2_conv)
 co2_lvov_cum = np.cumsum(co2_lvov_arr)
-
-
-# ==== Resultaten & Visualisatie ====
 
 st.title("Analysetool Asfaltonderhoud ZOAB-wegdek")
 
@@ -298,9 +221,9 @@ components.html(f"""
             margin: 0.4rem 0;
             font-family: Arial, sans-serif;
         ">
-            <strong>Type wegdek:</strong> {type_wegdek} |
-            <strong>Rijbanen:</strong> {aantal_rijbanen} |
-            <strong>Opp./rijbaan:</strong> {opp_m2:,} m²
+            <strong>Wegdek:</strong> {type_wegdek} |
+            <strong>Locatie:</strong> {locatie} |
+            <strong>Oppervlakte:</strong> {opp_m2:,} m²
         </p>
         <p style="
             color: #535353;
@@ -308,19 +231,12 @@ components.html(f"""
             margin: 0.4rem 0;
             font-family: Arial, sans-serif;
         ">
-            <strong>Leeftijd asfalt:</strong> {leeftijd_asfalt} jaar |
-            <strong>Simulatieduur:</strong> {jaren} jaar
-        </p>
-        <p style="
-            color: #535353;
-            font-size: 1rem;
-            margin: 0.4rem 0;
-            font-family: Arial, sans-serif;
-        ">
-            <strong>Vaste kosten per behandeling:</strong> €{vaste_kosten:,}
+            <strong>Leeftijd huidig asfalt:</strong> {leeftijd_asfalt} jaar |
+            <strong>Simulatieduur:</strong> {jaren} jaar |
+            <strong>Levensduur:</strong> {levensduur} jaar
         </p>
     </div>
-""", height=200)
+""", height=180)
 
 
 
