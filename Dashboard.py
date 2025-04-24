@@ -264,7 +264,7 @@ components.html(f"""
 
 
 
-st.header(f"Resultaten over {jaren} jaar")
+st.header(f"Resultaten over {simulatieduur} jaar")
 
 col1, col2 = st.columns(2)
 with col1:
