@@ -207,10 +207,11 @@ for baan in range(aantal_rijbanen):
         else:
             break
 
+# ==== CUMULATIEVE SOMMEN ====
 kosten_conv_cum = np.cumsum(kosten_conv)
-kosten_lvov_cum = np.cumsum(kosten_lvov_arr)
+kosten_lvov_cum = np.cumsum(kosten_lvov)
 co2_conv_cum = np.cumsum(co2_conv)
-co2_lvov_cum = np.cumsum(co2_lvov_arr)
+co2_lvov_cum = np.cumsum(co2_lvov)
 
 st.title("Analysetool Asfaltonderhoud ZOAB-wegdek")
 
