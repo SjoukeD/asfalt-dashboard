@@ -174,27 +174,38 @@ co2_lvov_baan = 1.5 * oppervlak_per_baan / 1000
 
 
 # ==== CONVENTIONELE STRATEGIE ====
-i = levensduur
-while i <= jaren:
-    kosten_conv[i] = kosten_asfalt
-    co2_conv[i] = co2_asfalt
-    i += levensduur
+for baan in range(aantal_rijbanen):
+    positie = "Rechter rijweg" if baan == 0 else "Linker rijweg"
+    levensduur = bepaal_levensduur(type_wegdek, positie)
+    jaar = levensduur - leeftijd_asfalt  # start op basis van resterende levensduur
+    while jaar <= simulatieduur:
+        kosten_conv[jaar] += kosten_asfalt_baan + vaste_kosten
+        co2_conv[jaar] += co2_asfalt_baan
+        jaar += levensduur  # volgende cyclus
 
 # ==== LVOv STRATEGIE ====
-i = 6 - leeftijd_asfalt  # Eerste LVOv wanneer huidig asfalt 6 jaar oud wordt
-levensduur_huidig = levensduur
+for baan in range(aantal_rijbanen):
+    positie = "Rechter rijweg" if baan == 0 else "Linker rijweg"
+    levensduur_basis = bepaal_levensduur(type_wegdek, positie)
+    levensduur_huidig = levensduur_basis
+    jaar = 6 - leeftijd_asfalt  # eerste LVOv wanneer asfalt 6 jaar oud is
 
-while i <= jaren:
-    kosten_lvov_arr[i] = kosten_lvov
-    co2_lvov_arr[i] = co2_lvov
-    jaar_vervanging = i + levensduur_huidig
-    if jaar_vervanging <= jaren:
-        kosten_lvov_arr[jaar_vervanging] = kosten_asfalt
-        co2_lvov_arr[jaar_vervanging] = co2_asfalt
-        levensduur_huidig = levensduur + 3
-        i = jaar_vervanging + 6
-    else:
-        break
+    while jaar <= simulatieduur:
+        # LVOv-behandeling
+        kosten_lvov[jaar] += kosten_lvov_baan + vaste_kosten
+        co2_lvov[jaar] += co2_lvov_baan
+
+        jaar_vervanging = jaar + levensduur_huidig
+        if jaar_vervanging <= simulatieduur:
+            # vervanging
+            kosten_lvov[jaar_vervanging] += kosten_asfalt_baan + vaste_kosten
+            co2_lvov[jaar_vervanging] += co2_asfalt_baan
+
+            # na vervanging: +3 jaar levensduur & herstart cyclus na 6 jaar
+            levensduur_huidig += 3
+            jaar = jaar_vervanging + 6
+        else:
+            break
 
 kosten_conv_cum = np.cumsum(kosten_conv)
 kosten_lvov_cum = np.cumsum(kosten_lvov_arr)
