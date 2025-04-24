@@ -150,14 +150,7 @@ with st.sidebar:
 
 
 # Levensduur lookup functie
-def bepaal_levensduur(type_wegdek, positie):
-    matrix = {
-        ("1L-ZOAB", "Linker rijweg"): 17,
-        ("1L-ZOAB", "Rechter rijweg"): 11,
-        ("2L-ZOAB", "Linker rijweg"): 13,
-        ("2L-ZOAB", "Rechter rijweg"): 9
-    }
-    return matrix.get((type_wegdek, positie), 10)
+
 def bepaal_levensduur(type_wegdek, positie):
     matrix = {
         ("1L-ZOAB", "Linker rijweg"): 17,
@@ -450,7 +443,7 @@ with tab2:
 
 with tab3:
     fig3, ax3 = plt.subplots()
-    jaren_range = range(simulatieduur + 1)
+    jaren_range = range(1, simulatieduur + 1)
     width = 0.4
     ax3.bar([j - width/2 for j in jaren_range], kosten_conv, width, label="Conventioneel")
     ax3.bar([j + width/2 for j in jaren_range], kosten_lvov, width, label="LVOv")
