@@ -205,6 +205,7 @@ for baan in range(aantal_rijbanen):
             co2_lvov[jaar_vervanging] += co2_asfalt_baan
 
             # na vervanging: herstart cyclus na 6 jaar
+            levensduur_huidig = levensduur_basis
             jaar = jaar_vervanging + 6
         else:
             break
