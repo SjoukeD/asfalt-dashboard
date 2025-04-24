@@ -217,6 +217,9 @@ st.title("Analysetool Asfaltonderhoud ZOAB-wegdek")
 
 import streamlit.components.v1 as components
 
+levensduur_rechts = bepaal_levensduur(type_wegdek, "Rechter rijweg")
+levensduur_links = bepaal_levensduur(type_wegdek, "Linker rijweg")
+
 components.html(f"""
     <div style="
         background-color: #f2f2f2;
@@ -241,8 +244,8 @@ components.html(f"""
             font-family: Arial, sans-serif;
         ">
             <strong>Wegdek:</strong> {type_wegdek} |
-            <strong>Locatie:</strong> {locatie} |
-            <strong>Oppervlakte:</strong> {opp_m2:,} m²
+            <strong>Aantal rijbanen:</strong> {aantal_rijbanen} |
+            <strong>Oppervlakte:</strong> {opp_m2:,.0f} m²
         </p>
         <p style="
             color: #535353;
@@ -251,11 +254,12 @@ components.html(f"""
             font-family: Arial, sans-serif;
         ">
             <strong>Leeftijd huidig asfalt:</strong> {leeftijd_asfalt} jaar |
-            <strong>Simulatieduur:</strong> {jaren} jaar |
-            <strong>Levensduur:</strong> {levensduur} jaar
+            <strong>Simulatieduur:</strong> {simulatieduur} jaar |
+            <strong>Levensduur:</strong> {levensduur_rechts} jr (rechter), {levensduur_links} jr (linker)
         </p>
     </div>
 """, height=180)
+
 
 
 
