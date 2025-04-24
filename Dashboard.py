@@ -269,18 +269,18 @@ st.header(f"Resultaten over {jaren} jaar")
 col1, col2 = st.columns(2)
 with col1:
     st.subheader("Financiële Impact")
-    st.metric("Conventionele aanpak", f"€{kosten_conv_cum[-1]:,.0f}")
-    st.metric("LVOv aanpak", f"€{kosten_lvov_cum[-1]:,.0f}")
+    st.metric("Conventioneel", f"€{kosten_conv_cum[-1]:,.0f}")
+    st.metric("LVOv", f"€{kosten_lvov_cum[-1]:,.0f}")
     besparing = kosten_conv_cum[-1] - kosten_lvov_cum[-1]
-    besparing_pct = (besparing / kosten_conv_cum[-1]) * 100
+    besparing_pct = 100 * besparing / kosten_conv_cum[-1] if kosten_conv_cum[-1] else 0
     st.metric("Besparing", f"€{besparing:,.0f}", f"{besparing_pct:.1f}%")
 
 with col2:
-    st.subheader("Milieu Impact")
-    st.metric("Conventionele aanpak", f"{co2_conv_cum[-1]:.1f} ton")
-    st.metric("LVOv aanpak", f"{co2_lvov_cum[-1]:.1f} ton")
+    st.subheader("Milieu Impact (CO₂)")
+    st.metric("Conventioneel", f"{co2_conv_cum[-1]:.1f} ton")
+    st.metric("LVOv", f"{co2_lvov_cum[-1]:.1f} ton")
     co2_besp = co2_conv_cum[-1] - co2_lvov_cum[-1]
-    co2_besp_pct = (co2_besp / co2_conv_cum[-1]) * 100
+    co2_besp_pct = 100 * co2_besp / co2_conv_cum[-1] if co2_conv_cum[-1] else 0
     st.metric("Besparing", f"{co2_besp:.1f} ton", f"{co2_besp_pct:.1f}%")
 
 st.header("Visualisaties")
