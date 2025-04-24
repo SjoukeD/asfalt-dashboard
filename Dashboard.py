@@ -190,22 +190,24 @@ for baan in range(aantal_rijbanen):
     levensduur_huidig = levensduur_basis
     jaar = 6 - leeftijd_asfalt  # eerste LVOv wanneer asfalt 6 jaar oud is
 
-    while jaar <= simulatieduur:
-        # LVOv-behandeling
-        kosten_lvov[jaar] += kosten_lvov_baan + vaste_kosten
-        co2_lvov[jaar] += co2_lvov_baan
+   while jaar <= simulatieduur:
+    # LVOv-behandeling
+    kosten_lvov[jaar] += kosten_lvov_baan + vaste_kosten
+    co2_lvov[jaar] += co2_lvov_baan
 
-        levensduur_huidig += 3  # verleng levensduur direct na LVOv
-        jaar_vervanging = jaar + levensduur_huidig
-      if jaar_vervanging <= simulatieduur:
-            # vervanging
-            kosten_lvov[jaar_vervanging] += kosten_asfalt_baan + vaste_kosten
-            co2_lvov[jaar_vervanging] += co2_asfalt_baan
+    levensduur_huidig += 3  # verleng levensduur direct na LVOv
+    jaar_vervanging = jaar + levensduur_huidig
 
-            # na vervanging: +3 jaar levensduur & herstart cyclus na 6 jaar
-            jaar = jaar_vervanging + 6
-        else:
-            break
+    if jaar_vervanging <= simulatieduur:
+        # vervanging
+        kosten_lvov[jaar_vervanging] += kosten_asfalt_baan + vaste_kosten
+        co2_lvov[jaar_vervanging] += co2_asfalt_baan
+
+        # na vervanging: herstart cyclus na 6 jaar
+        jaar = jaar_vervanging + 6
+    else:
+        break
+
 
 # ==== CUMULATIEVE SOMMEN ====
 kosten_conv_cum = np.cumsum(kosten_conv)
