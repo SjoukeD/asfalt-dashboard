@@ -195,9 +195,8 @@ for baan in range(aantal_rijbanen):
         kosten_lvov[jaar] += kosten_lvov_baan + vaste_kosten
         co2_lvov[jaar] += co2_lvov_baan
 
-        restlevensduur = levensduur_huidig - jaar  # hoeveel jaar zit er nog in dit asfalt
-        verlengde_duur = restlevensduur + 3        # 3 jaar extra door LVOv
-        jaar_vervanging = jaar + verlengde_duur
+        levensduur_huidig += 3  # verleng levensduur direct na LVOv
+        jaar_vervanging = jaar + levensduur_huidig
 
         if jaar_vervanging <= simulatieduur:
             # vervanging
@@ -205,11 +204,9 @@ for baan in range(aantal_rijbanen):
             co2_lvov[jaar_vervanging] += co2_asfalt_baan
 
             # na vervanging: herstart cyclus na 6 jaar
-            levensduur_huidig = levensduur_basis
             jaar = jaar_vervanging + 6
         else:
             break
-
 
 
 
