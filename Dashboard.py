@@ -291,37 +291,35 @@ plt.rcParams['axes.labelcolor'] = '#154273'
 plt.rcParams['axes.titlecolor'] = '#154273'
 plt.rcParams['text.color'] = '#154273'
 
+
 with tab1:
-    fig1, ax1 = plt.subplots(figsize=(12, 6))
-    ax1.plot(range(jaren + 1), kosten_conv_cum, label="Conventioneel", color="#154273")
-    ax1.plot(range(jaren + 1), kosten_lvov_cum, label="LVOv", color="#FFD100")
-    ax1.set_xlabel("Jaar", color='#154273', fontsize=11)
-    ax1.set_ylabel("Cumulatieve kosten (€)", color='#154273', fontsize=11)
-    ax1.grid(True, linestyle='--', alpha=0.7)
-    ax1.tick_params(colors='#154273')
+    fig1, ax1 = plt.subplots()
+    ax1.plot(kosten_conv_cum, label="Conventioneel")
+    ax1.plot(kosten_lvov_cum, label="LVOv")
+    ax1.set_title("Cumulatieve Kosten (€)")
+    ax1.set_xlabel("Jaar")
+    ax1.set_ylabel("€")
     ax1.legend()
     st.pyplot(fig1)
 
 with tab2:
-    fig2, ax2 = plt.subplots(figsize=(12, 6))
-    ax2.plot(range(jaren + 1), co2_conv_cum, label="Conventioneel", color="#154273")
-    ax2.plot(range(jaren + 1), co2_lvov_cum, label="LVOv", color="#FFD100")
-    ax2.set_xlabel("Jaar", color='#154273', fontsize=11)
-    ax2.set_ylabel("Cumulatieve CO₂-uitstoot (ton)", color='#154273', fontsize=11)
-    ax2.grid(True, linestyle='--', alpha=0.7)
-    ax2.tick_params(colors='#154273')
+    fig2, ax2 = plt.subplots()
+    ax2.plot(co2_conv_cum, label="Conventioneel")
+    ax2.plot(co2_lvov_cum, label="LVOv")
+    ax2.set_title("Cumulatieve CO₂-uitstoot (ton)")
+    ax2.set_xlabel("Jaar")
+    ax2.set_ylabel("CO₂ (ton)")
     ax2.legend()
     st.pyplot(fig2)
 
 with tab3:
-    fig3, ax3 = plt.subplots(figsize=(12, 6))
-    x = range(jaren + 1)
-    width = 0.35
-    ax3.bar([i - width/2 for i in x], kosten_conv, width, label="Conventioneel", color="#154273", alpha=0.7)
-    ax3.bar([i + width/2 for i in x], kosten_lvov_arr, width, label="LVOv", color="#FFD100", alpha=0.7)
-    ax3.set_xlabel("Jaar", color='#154273', fontsize=11)
-    ax3.set_ylabel("Kosten (€)", color='#154273', fontsize=11)
-    ax3.grid(True, linestyle='--', alpha=0.7)
-    ax3.tick_params(colors='#154273')
+    fig3, ax3 = plt.subplots()
+    jaren_range = range(simulatieduur + 1)
+    width = 0.4
+    ax3.bar([j - width/2 for j in jaren_range], kosten_conv, width, label="Conventioneel")
+    ax3.bar([j + width/2 for j in jaren_range], kosten_lvov, width, label="LVOv")
+    ax3.set_title("Jaarlijkse Kosten")
+    ax3.set_xlabel("Jaar")
+    ax3.set_ylabel("Kosten (€)")
     ax3.legend()
     st.pyplot(fig3)
