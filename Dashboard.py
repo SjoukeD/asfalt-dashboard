@@ -158,60 +158,196 @@ def bepaal_levensduur(type_wegdek, positie):
         ("2L-ZOAB", "Rechter rijweg"): 9
     }
     return matrix.get((type_wegdek, positie), 10)
+def bepaal_levensduur(type_wegdek, positie):
+    matrix = {
+        ("1L-ZOAB", "Linker rijweg"): 17,
+        ("1L-ZOAB", "Rechter rijweg"): 11,
+        ("2L-ZOAB", "Linker rijweg"): 13,
+        ("2L-ZOAB", "Rechter rijweg"): 9
+    }
+    return matrix[(type_wegdek, positie)]
 
-# Init arrays
-kosten_conv = np.zeros(simulatieduur + 1)
-kosten_lvov = np.zeros(simulatieduur + 1)
-co2_conv = np.zeros(simulatieduur + 1)
-co2_lvov = np.zeros(simulatieduur + 1)
+def kosten_linker_baan_conventioneel(type_wegdek, duur, oppervlakte, vaste_kosten,
+                                     kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov):
+    """Simuleert jaarlijkse en cumulatieve kosten en CO₂-uitstoot voor conventionele strategie (linker rijbaan)."""
+    levensduur = bepaal_levensduur(type_wegdek, "Linker rijweg")
+    jaarlijkse_kosten = []
+    cumulatieve_kosten = []
+    jaarlijkse_co2 = []
+    cumulatieve_co2 = []
+    totaal_kosten = 0.0
+    totaal_co2 = 0.0
+    volgende_vervanging = levensduur  # eerstvolgende jaar van volledige vervanging
+    for jaar in range(1, duur+1):
+        kosten = 0.0
+        co2 = 0.0
+        if jaar == volgende_vervanging:
+            # Volledige herasfaltering in dit jaar
+            kosten = vaste_kosten + (kost_asfalt + kost_hinder_asfalt) * oppervlakte
+            co2 = (5 * oppervlakte) / 1000.0  # 5 kg/m² omgezet naar ton
+            # Plan de volgende vervanging na opnieuw 'levensduur' jaren
+            volgende_vervanging += levensduur
+        # Toevoegen aan cumulatieven
+        totaal_kosten += kosten
+        totaal_co2 += co2
+        jaarlijkse_kosten.append(kosten)
+        cumulatieve_kosten.append(totaal_kosten)
+        jaarlijkse_co2.append(co2)
+        cumulatieve_co2.append(totaal_co2)
+    return jaarlijkse_kosten, cumulatieve_kosten, jaarlijkse_co2, cumulatieve_co2
 
-# Berekeningen per rijbaan
-oppervlak_per_baan = opp_m2 / aantal_rijbanen
-kosten_asfalt_baan = (kost_asfalt + kost_hinder_asfalt) * oppervlak_per_baan
-kosten_lvov_baan = (kost_lvov + kost_hinder_lvov) * oppervlak_per_baan
-co2_asfalt_baan = 5 * oppervlak_per_baan / 1000
-co2_lvov_baan = 1.5 * oppervlak_per_baan / 1000
+def kosten_rechter_baan_conventioneel(type_wegdek, duur, oppervlakte, vaste_kosten,
+                                     kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov):
+    """Simuleert jaarlijkse en cumulatieve kosten en CO₂-uitstoot voor conventionele strategie (rechter rijbaan)."""
+    levensduur = bepaal_levensduur(type_wegdek, "Rechter rijweg")
+    # Initialiseer lijsten en cumulatieven
+    jaarlijkse_kosten = []
+    cumulatieve_kosten = []
+    jaarlijkse_co2 = []
+    cumulatieve_co2 = []
+    totaal_kosten = 0.0
+    totaal_co2 = 0.0
+    volgende_vervanging = levensduur
+    for jaar in range(1, duur+1):
+        kosten = 0.0
+        co2 = 0.0
+        if jaar == volgende_vervanging:
+            kosten = vaste_kosten + (kost_asfalt + kost_hinder_asfalt) * oppervlakte
+            co2 = (5 * oppervlakte) / 1000.0
+            volgende_vervanging += levensduur
+        totaal_kosten += kosten
+        totaal_co2 += co2
+        jaarlijkse_kosten.append(kosten)
+        cumulatieve_kosten.append(totaal_kosten)
+        jaarlijkse_co2.append(co2)
+        cumulatieve_co2.append(totaal_co2)
+    return jaarlijkse_kosten, cumulatieve_kosten, jaarlijkse_co2, cumulatieve_co2
+def kosten_linker_baan_lvov(type_wegdek, duur, oppervlakte, vaste_kosten,
+                            kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov):
+    """Simuleert jaarlijkse en cumulatieve kosten en CO₂-uitstoot voor LVOv-strategie (linker rijbaan)."""
+    levensduur = bepaal_levensduur(type_wegdek, "Linker rijweg")
+    jaarlijkse_kosten = []
+    cumulatieve_kosten = []
+    jaarlijkse_co2 = []
+    cumulatieve_co2 = []
+    totaal_kosten = 0.0
+    totaal_co2 = 0.0
+    # Initialiseer eerste cyclus planning
+    start_cyclus = 0
+    volgende_lvov = start_cyclus + 6
+    volgende_vervanging = start_cyclus + levensduur + 3
+    for jaar in range(1, duur+1):
+        kosten = 0.0
+        co2 = 0.0
+        if jaar == volgende_lvov:
+            # LVOv-behandeling in dit jaar
+            kosten = vaste_kosten + (kost_lvov + kost_hinder_lvov) * oppervlakte
+            co2 = (1.5 * oppervlakte) / 1000.0  # 1.5 kg/m² omgezet naar ton
+            # Na deze LVOv geen nieuwe LVOv tot de geplande vervanging heeft plaatsgevonden
+            volgende_lvov = volgende_vervanging + 1
+        if jaar == volgende_vervanging:
+            # Volledige vervanging (herasfalteren) in dit jaar
+            kosten = vaste_kosten + (kost_asfalt + kost_hinder_asfalt) * oppervlakte
+            co2 = (5 * oppervlakte) / 1000.0
+            # Herstart de cyclus na vervanging
+            start_cyclus = jaar
+            volgende_lvov = start_cyclus + 6
+            volgende_vervanging = start_cyclus + levensduur + 3
+        # Cumulatieven bijwerken en toevoegen aan lijsten
+        totaal_kosten += kosten
+        totaal_co2 += co2
+        jaarlijkse_kosten.append(kosten)
+        cumulatieve_kosten.append(totaal_kosten)
+        jaarlijkse_co2.append(co2)
+        cumulatieve_co2.append(totaal_co2)
+    return jaarlijkse_kosten, cumulatieve_kosten, jaarlijkse_co2, cumulatieve_co2
 
+def kosten_rechter_baan_lvov(type_wegdek, duur, oppervlakte, vaste_kosten,
+                             kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov):
+    """Simuleert jaarlijkse en cumulatieve kosten en CO₂-uitstoot voor LVOv-strategie (rechter rijbaan)."""
+    levensduur = bepaal_levensduur(type_wegdek, "Rechter rijweg")
+    jaarlijkse_kosten = []
+    cumulatieve_kosten = []
+    jaarlijkse_co2 = []
+    cumulatieve_co2 = []
+    totaal_kosten = 0.0
+    totaal_co2 = 0.0
+    start_cyclus = 0
+    volgende_lvov = start_cyclus + 6
+    volgende_vervanging = start_cyclus + levensduur + 3
+    for jaar in range(1, duur+1):
+        kosten = 0.0
+        co2 = 0.0
+        if jaar == volgende_lvov:
+            # LVOv-behandeling in dit jaar
+            kosten = vaste_kosten + (kost_lvov + kost_hinder_lvov) * oppervlakte
+            co2 = (1.5 * oppervlakte) / 1000.0
+            volgende_lvov = volgende_vervanging + 1
+        if jaar == volgende_vervanging:
+            # Volledige vervanging in dit jaar
+            kosten = vaste_kosten + (kost_asfalt + kost_hinder_asfalt) * oppervlakte
+            co2 = (5 * oppervlakte) / 1000.0
+            # Nieuwe cyclus na vervanging
+            start_cyclus = jaar
+            volgende_lvov = start_cyclus + 6
+            volgende_vervanging = start_cyclus + levensduur + 3
+        totaal_kosten += kosten
+        totaal_co2 += co2
+        jaarlijkse_kosten.append(kosten)
+        cumulatieve_kosten.append(totaal_kosten)
+        jaarlijkse_co2.append(co2)
+        cumulatieve_co2.append(totaal_co2)
+    return jaarlijkse_kosten, cumulatieve_kosten, jaarlijkse_co2, cumulatieve_co2
 
-# ==== CONVENTIONELE STRATEGIE ====
-for baan in range(aantal_rijbanen):
-    positie = "Rechter rijweg" if baan == 0 else "Linker rijweg"
-    levensduur = bepaal_levensduur(type_wegdek, positie)
-    jaar = levensduur - leeftijd_asfalt  # start op basis van resterende levensduur
-    while jaar <= simulatieduur:
-        kosten_conv[jaar] += kosten_asfalt_baan + vaste_kosten
-        co2_conv[jaar] += co2_asfalt_baan
-        jaar += levensduur  # volgende cyclus
+# Verdeling oppervlak op basis van aantal rijbanen
+verdeling = {
+    1: (1.0, 0.0),
+    2: (0.5, 0.5),
+    3: (1/3, 2/3),
+    4: (0.25, 0.75),
+    5: (0.2, 0.8),
+    6: (1/6, 5/6),
+    7: (1/7, 6/7),
+    8: (0.125, 0.875)
+}
+perc_rechts, perc_links = verdeling[aantal_rijbanen]
+opp_rechts = opp_m2 * perc_rechts
+opp_links = opp_m2 * perc_links
 
-# ==== LVOv STRATEGIE ====
-for baan in range(aantal_rijbanen):
-    positie = "Rechter rijweg" if baan == 0 else "Linker rijweg"
-    levensduur_basis = bepaal_levensduur(type_wegdek, positie)
-    levensduur_huidig = levensduur_basis
-    jaar = 6 - leeftijd_asfalt  # eerste LVOv wanneer asfalt 6 jaar oud is
+# Strategiekeuze
+duur = simulatieduur
 
-    while jaar <= simulatieduur:
-        # LVOv-behandeling
-        kosten_lvov[jaar] += kosten_lvov_baan + vaste_kosten
-        co2_lvov[jaar] += co2_lvov_baan
+# == Conventioneel
+jr_k_r_conv, cum_k_r_conv, jr_c_r_conv, cum_c_r_conv = kosten_rechter_baan_conventioneel(
+    type_wegdek, duur, opp_rechts, vaste_kosten,
+    kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov
+)
 
-        jaar_vervanging = jaar + levensduur_huidig
-        if jaar_vervanging <= simulatieduur:
-            # vervanging
-            kosten_lvov[jaar_vervanging] += kosten_asfalt_baan + vaste_kosten
-            co2_lvov[jaar_vervanging] += co2_asfalt_baan
+jr_k_l_conv, cum_k_l_conv, jr_c_l_conv, cum_c_l_conv = kosten_linker_baan_conventioneel(
+    type_wegdek, duur, opp_links, vaste_kosten,
+    kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov
+)
 
-            # na vervanging: +3 jaar levensduur & herstart cyclus na 6 jaar
-            levensduur_huidig += 3
-            jaar = jaar_vervanging + 6
-        else:
-            break
+kosten_conv = np.array(jr_k_r_conv) + np.array(jr_k_l_conv)
+kosten_conv_cum = np.array(cum_k_r_conv) + np.array(cum_k_l_conv)
+co2_conv = np.array(jr_c_r_conv) + np.array(jr_c_l_conv)
+co2_conv_cum = np.array(cum_c_r_conv) + np.array(cum_c_l_conv)
 
-# ==== CUMULATIEVE SOMMEN ====
-kosten_conv_cum = np.cumsum(kosten_conv)
-kosten_lvov_cum = np.cumsum(kosten_lvov)
-co2_conv_cum = np.cumsum(co2_conv)
-co2_lvov_cum = np.cumsum(co2_lvov)
+# == LVOv
+jr_k_r_lvov, cum_k_r_lvov, jr_c_r_lvov, cum_c_r_lvov = kosten_rechter_baan_lvov(
+    type_wegdek, duur, opp_rechts, vaste_kosten,
+    kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov
+)
+
+jr_k_l_lvov, cum_k_l_lvov, jr_c_l_lvov, cum_c_l_lvov = kosten_linker_baan_lvov(
+    type_wegdek, duur, opp_links, vaste_kosten,
+    kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov
+)
+
+kosten_lvov = np.array(jr_k_r_lvov) + np.array(jr_k_l_lvov)
+kosten_lvov_cum = np.array(cum_k_r_lvov) + np.array(cum_k_l_lvov)
+co2_lvov = np.array(jr_c_r_lvov) + np.array(jr_c_l_lvov)
+co2_lvov_cum = np.array(cum_c_r_lvov) + np.array(cum_c_l_lvov)
 
 st.title("Analysetool Asfaltonderhoud ZOAB-wegdek")
 
