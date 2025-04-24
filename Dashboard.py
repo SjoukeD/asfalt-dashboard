@@ -138,6 +138,7 @@ with st.sidebar:
     jaren = st.slider("Duur simulatieperiode (jaren)", min_value=10, max_value=100, value=45)
 
     st.markdown("<h3 style='color: #154273; font-size: 1.2rem; margin-top: 1rem;'>Kostenparameters</h3>", unsafe_allow_html=True)
+    vaste_kosten = st.sidebar.number_input("Vaste kosten per onderhoudsactie (€)", min_value=0, value=200000, step=10000)
     with st.expander("Conventionele Aanpak", expanded=True):
         kost_asfalt = st.number_input("Materiaal kosten asfalt (€/m²)", value=15.0)
         kost_hinder_asfalt = st.number_input("Verkeershinderkosten asfalt (€/m²)", value=7.0)
