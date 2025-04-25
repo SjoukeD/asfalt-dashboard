@@ -1,4 +1,3 @@
-
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,34 +18,11 @@ st.markdown("""
         color: #535353;
         font-family: "Arial", sans-serif;
     }
+    h1, h2, h3, h4, h5 {
+        color: #154273;
+    }
     .stApp {
         background-color: #ffffff;
-    }
-
-    /* Headers styling */
-    .css-10trblm {  /* Main title */
-        color: #154273 !important;
-        font-family: "Arial", sans-serif !important;
-        font-weight: 600 !important;
-        font-size: 2.5rem !important;
-    }
-    .css-1629p8f {  /* Section headers */
-        color: #154273 !important;
-        font-family: "Arial", sans-serif !important;
-        font-weight: 600 !important;
-        font-size: 1.8rem !important;
-    }
-    /* Sidebar headers */
-    .css-79elbk, .css-j7qwjs {  /* Sidebar headers */
-        color: #154273 !important;
-        font-family: "Arial", sans-serif !important;
-        font-weight: 600 !important;
-    }
-    .css-79elbk {  /* Main sidebar header */
-        font-size: 1.5rem !important;
-    }
-    .css-j7qwjs {  /* Sidebar subheaders */
-        font-size: 1.2rem !important;
     }
 
     /* Grijze kaart voor Huidige configuratie */
@@ -111,47 +87,25 @@ st.markdown("""
         border-radius: 0.5rem;
         margin-bottom: 1rem;
         color: black !important;
-    
     }
-/* RWS-stijl knoppen */
-    button[kind="primary"] {
-        background-color: #154273 !important;
-        color: white !important;
-        border-radius: 6px !important;
-        font-weight: bold;
-    }
-
-    /* Sliders achtergrondkleur en stijl */
-    .stSlider > div[data-baseweb="slider"] {
-        background-color: #f2f2f2 !important;
-        padding: 0.2rem;
-        border-radius: 8px;
-    }
-
-    .stSlider span[role="slider"] {
-        background-color: #154273 !important;
-        border: 2px solid #FFD100 !important;
-    }
-
 </style>
 """, unsafe_allow_html=True)
 
 
-# ==== SIDEBAR PARAMETERS ===
+
+# ==== SIDEBAR PARAMETERS ====
 with st.sidebar:
     st.image("NIEUW-RWS-3488526-v1-logo_RWS_ministerie_Infrastructuur_en_Waterstaat_NL.png", width=300)
-    st.markdown("<h2 style='color: #154273; font-size: 1.5rem; margin-bottom: 1rem;'>Input Parameters</h2>", unsafe_allow_html=True)
+    st.header("Input Parameters")
 
-    st.markdown("<h3 style='color: #154273; font-size: 1.2rem; margin-top: 1rem;'>Wegdek Specificaties</h3>", unsafe_allow_html=True)
-    opp_m2 = st.number_input("Oppervlakte wegdek per rijbaan (m²)", min_value=100, value=70000, step=100)
+    st.subheader("Wegdek Specificaties")
+    opp_m2 = st.number_input("Oppervlakte wegdek ZOAB (m²)", min_value=100, value=70000, step=100)
     type_wegdek = st.selectbox("Type wegdek", ["1L-ZOAB", "2L-ZOAB"])
-    aantal_rijbanen = st.slider("Aantal rijbanen", min_value=1, max_value=8, value=2)
+    locatie = st.selectbox("Locatie", ["Linker rijweg", "Rechter rijweg"])
     leeftijd_asfalt = st.slider("Leeftijd huidig asfalt (jaar)", min_value=0, max_value=6, value=0)
     jaren = st.slider("Duur simulatieperiode (jaren)", min_value=10, max_value=100, value=45)
 
-    st.markdown("<h3 style='color: #154273; font-size: 1.2rem; margin-top: 1rem;'>Kostenparameters</h3>", unsafe_allow_html=True)
-    vaste_kosten = st.number_input("Vaste begeleidingskosten per behandeling (€)", min_value=0, value=200000, step=1000)
-
+    st.subheader("Kostenparameters")
     with st.expander("Conventionele Aanpak", expanded=True):
         kost_asfalt = st.number_input("Materiaal kosten asfalt (€/m²)", value=15.0)
         kost_hinder_asfalt = st.number_input("Verkeershinderkosten asfalt (€/m²)", value=7.0)
@@ -160,61 +114,56 @@ with st.sidebar:
         kost_lvov = st.number_input("Materiaal kosten LVOv (€/m²)", value=2.5)
         kost_hinder_lvov = st.number_input("Verkeershinderkosten LVOv (€/m²)", value=1.5)
 
-# Levensduur per rijbaan (om en om rechts/links)
-def bepaal_levensduur(type_wegdek, is_rechter):
+def bepaal_levensduur(type_wegdek, locatie):
     matrix = {
-        ("1L-ZOAB", True): 11,
-        ("1L-ZOAB", False): 17,
-        ("2L-ZOAB", True): 9,
-        ("2L-ZOAB", False): 13
+        ("1L-ZOAB", "Linker rijweg"): 17,
+        ("1L-ZOAB", "Rechter rijweg"): 11,
+        ("2L-ZOAB", "Linker rijweg"): 13,
+        ("2L-ZOAB", "Rechter rijweg"): 9
     }
-    return matrix.get((type_wegdek, is_rechter), 10)
+    return matrix.get((type_wegdek, locatie), 10)
+
+levensduur = bepaal_levensduur(type_wegdek, locatie)
+kosten_asfalt = (kost_asfalt + kost_hinder_asfalt) * opp_m2
+kosten_lvov = (kost_lvov + kost_hinder_lvov) * opp_m2
+co2_asfalt = 5 * opp_m2 / 1000
+co2_lvov = 1.5 * opp_m2 / 1000
 
 kosten_conv = np.zeros(jaren + 1)
 kosten_lvov_arr = np.zeros(jaren + 1)
 co2_conv = np.zeros(jaren + 1)
 co2_lvov_arr = np.zeros(jaren + 1)
 
-# Simuleer per rijbaan
-for rijbaan in range(aantal_rijbanen):
-    is_rechter = rijbaan == 0  # 1e rijbaan is rechter, daarna links
-    levensduur = bepaal_levensduur(type_wegdek, is_rechter)
+# ==== CONVENTIONELE STRATEGIE ====
+i = levensduur
+while i <= jaren:
+    kosten_conv[i] = kosten_asfalt
+    co2_conv[i] = co2_asfalt
+    i += levensduur
 
-    kosten_asfalt = (kost_asfalt + kost_hinder_asfalt) * opp_m2
-    kosten_lvov = (kost_lvov + kost_hinder_lvov) * opp_m2
-    co2_asfalt = 5 * opp_m2 / 1000
-    co2_lvov = 1.5 * opp_m2 / 1000
+# ==== LVOv STRATEGIE ====
+i = 6 - leeftijd_asfalt  # Eerste LVOv wanneer huidig asfalt 6 jaar oud wordt
+levensduur_huidig = levensduur
 
-    # ==== CONVENTIONELE STRATEGIE ====
-    i = levensduur - leeftijd_asfalt
-    while i <= jaren:
-        kosten_conv[i] += kosten_asfalt + vaste_kosten
-        co2_conv[i] += co2_asfalt
-        i += levensduur
-
-    # ==== LVOv STRATEGIE ====
-    i = 6 - leeftijd_asfalt
-    levensduur_huidig = levensduur
-    while i <= jaren:
-        kosten_lvov_arr[i] += kosten_lvov + vaste_kosten
-        co2_lvov_arr[i] += co2_lvov
-        jaar_vervanging = i + levensduur_huidig
-        if jaar_vervanging <= jaren:
-            kosten_lvov_arr[jaar_vervanging] += kosten_asfalt + vaste_kosten
-            co2_lvov_arr[jaar_vervanging] += co2_asfalt
-            levensduur_huidig = levensduur + 3
-            i = jaar_vervanging + 6
-        else:
-            break
+while i <= jaren:
+    kosten_lvov_arr[i] = kosten_lvov
+    co2_lvov_arr[i] = co2_lvov
+    jaar_vervanging = i + levensduur_huidig
+    if jaar_vervanging <= jaren:
+        kosten_lvov_arr[jaar_vervanging] = kosten_asfalt
+        co2_lvov_arr[jaar_vervanging] = co2_asfalt
+        levensduur_huidig = levensduur + 3
+        i = jaar_vervanging + 6
+    else:
+        break
 
 kosten_conv_cum = np.cumsum(kosten_conv)
 kosten_lvov_cum = np.cumsum(kosten_lvov_arr)
 co2_conv_cum = np.cumsum(co2_conv)
 co2_lvov_cum = np.cumsum(co2_lvov_arr)
 
-# ==== Resultaten & Visualisatie ====
-
-st.title("Analysetool Asfaltonderhoud ZOAB-wegdek")
+# st.title("Analysetool Asfaltonderhoud ZOAB-wegdek")   ⛔ deze regel NIET gebruiken
+st.markdown("<h1 style='color: #154273;'>Analysetool Asfaltonderhoud ZOAB-wegdek</h1>", unsafe_allow_html=True)
 
 import streamlit.components.v1 as components
 
@@ -241,9 +190,9 @@ components.html(f"""
             margin: 0.4rem 0;
             font-family: Arial, sans-serif;
         ">
-            <strong>Type wegdek:</strong> {type_wegdek} |
-            <strong>Rijbanen:</strong> {aantal_rijbanen} |
-            <strong>Opp./rijbaan:</strong> {opp_m2:,} m²
+            <strong>Wegdek:</strong> {type_wegdek} |
+            <strong>Locatie:</strong> {locatie} |
+            <strong>Oppervlakte:</strong> {opp_m2:,} m²
         </p>
         <p style="
             color: #535353;
@@ -251,19 +200,13 @@ components.html(f"""
             margin: 0.4rem 0;
             font-family: Arial, sans-serif;
         ">
-            <strong>Leeftijd asfalt:</strong> {leeftijd_asfalt} jaar |
-            <strong>Simulatieduur:</strong> {jaren} jaar
-        </p>
-        <p style="
-            color: #535353;
-            font-size: 1rem;
-            margin: 0.4rem 0;
-            font-family: Arial, sans-serif;
-        ">
-            <strong>Vaste kosten per behandeling:</strong> €{vaste_kosten:,}
+            <strong>Leeftijd huidig asfalt:</strong> {leeftijd_asfalt} jaar |
+            <strong>Simulatieduur:</strong> {jaren} jaar |
+            <strong>Levensduur:</strong> {levensduur} jaar
         </p>
     </div>
-""", height=200)
+""", height=180)
+
 
 
 
@@ -290,19 +233,13 @@ with col2:
 st.header("Visualisaties")
 tab1, tab2, tab3 = st.tabs(["Cumulatieve Kosten", "Cumulatieve CO₂", "Jaarlijkse Kosten"])
 
-# Set style for all plots
-plt.rcParams['axes.labelcolor'] = '#154273'
-plt.rcParams['axes.titlecolor'] = '#154273'
-plt.rcParams['text.color'] = '#154273'
-
 with tab1:
     fig1, ax1 = plt.subplots(figsize=(12, 6))
     ax1.plot(range(jaren + 1), kosten_conv_cum, label="Conventioneel", color="#154273")
     ax1.plot(range(jaren + 1), kosten_lvov_cum, label="LVOv", color="#FFD100")
-    ax1.set_xlabel("Jaar", color='#154273', fontsize=11)
-    ax1.set_ylabel("Cumulatieve kosten (€)", color='#154273', fontsize=11)
+    ax1.set_xlabel("Jaar")
+    ax1.set_ylabel("Cumulatieve kosten (€)")
     ax1.grid(True, linestyle='--', alpha=0.7)
-    ax1.tick_params(colors='#154273')
     ax1.legend()
     st.pyplot(fig1)
 
@@ -310,10 +247,9 @@ with tab2:
     fig2, ax2 = plt.subplots(figsize=(12, 6))
     ax2.plot(range(jaren + 1), co2_conv_cum, label="Conventioneel", color="#154273")
     ax2.plot(range(jaren + 1), co2_lvov_cum, label="LVOv", color="#FFD100")
-    ax2.set_xlabel("Jaar", color='#154273', fontsize=11)
-    ax2.set_ylabel("Cumulatieve CO₂-uitstoot (ton)", color='#154273', fontsize=11)
+    ax2.set_xlabel("Jaar")
+    ax2.set_ylabel("Cumulatieve CO₂-uitstoot (ton)")
     ax2.grid(True, linestyle='--', alpha=0.7)
-    ax2.tick_params(colors='#154273')
     ax2.legend()
     st.pyplot(fig2)
 
@@ -323,9 +259,8 @@ with tab3:
     width = 0.35
     ax3.bar([i - width/2 for i in x], kosten_conv, width, label="Conventioneel", color="#154273", alpha=0.7)
     ax3.bar([i + width/2 for i in x], kosten_lvov_arr, width, label="LVOv", color="#FFD100", alpha=0.7)
-    ax3.set_xlabel("Jaar", color='#154273', fontsize=11)
-    ax3.set_ylabel("Kosten (€)", color='#154273', fontsize=11)
+    ax3.set_xlabel("Jaar")
+    ax3.set_ylabel("Kosten (€)")
     ax3.grid(True, linestyle='--', alpha=0.7)
-    ax3.tick_params(colors='#154273')
     ax3.legend()
     st.pyplot(fig3)
