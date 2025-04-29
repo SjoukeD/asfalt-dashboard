@@ -1,3 +1,5 @@
+
+
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
@@ -18,11 +20,34 @@ st.markdown("""
         color: #535353;
         font-family: "Arial", sans-serif;
     }
-    h1, h2, h3, h4, h5 {
-        color: #154273;
-    }
     .stApp {
         background-color: #ffffff;
+    }
+
+    /* Headers styling */
+    .css-10trblm {  /* Main title */
+        color: #154273 !important;
+        font-family: "Arial", sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 2.5rem !important;
+    }
+    .css-1629p8f {  /* Section headers */
+        color: #154273 !important;
+        font-family: "Arial", sans-serif !important;
+        font-weight: 600 !important;
+        font-size: 1.8rem !important;
+    }
+    /* Sidebar headers */
+    .css-79elbk, .css-j7qwjs {  /* Sidebar headers */
+        color: #154273 !important;
+        font-family: "Arial", sans-serif !important;
+        font-weight: 600 !important;
+    }
+    .css-79elbk {  /* Main sidebar header */
+        font-size: 1.5rem !important;
+    }
+    .css-j7qwjs {  /* Sidebar subheaders */
+        font-size: 1.2rem !important;
     }
 
     /* Grijze kaart voor Huidige configuratie */
@@ -96,76 +121,309 @@ st.markdown("""
 # ==== SIDEBAR PARAMETERS ====
 with st.sidebar:
     st.image("NIEUW-RWS-3488526-v1-logo_RWS_ministerie_Infrastructuur_en_Waterstaat_NL.png", width=300)
-    st.header("Input Parameters")
+    st.markdown("<h2 style='color: #154273; font-size: 1.5rem; margin-bottom: 1rem;'>Input Parameters</h2>", unsafe_allow_html=True)
+    
+    # Wegdek parameters
+    st.subheader("Wegdek")
+    type_wegdek = st.selectbox(
+        "Type wegdek",
+        ["1L-ZOAB", "2L-ZOAB", "ZOAB 0/8", "ZOAB 0/11", "DZOAB", "Fijn ZOAB", "ZOAB +"]
+    )
+    
+    # Default levensduur op basis van type wegdek
+    wegdek_defaults = {
+        "1L-ZOAB": (17, 11),
+        "2L-ZOAB": (13, 9),
+        "ZOAB 0/8": (17, 11),
+        "ZOAB 0/11": (18, 12),
+        "DZOAB": (20, 14),
+        "Fijn ZOAB": (15, 10),
+        "ZOAB +": (14, 9)
+    }
+    default_left, default_right = wegdek_defaults[type_wegdek]
+    
+    # Aangepaste levensduur inputs
+    st.subheader("Aangepaste Levensduur")
+    custom_left = st.number_input(
+        "Levensduur linker rijstrook (jaren)",
+        min_value=5,
+        max_value=30,
+        value=default_left,
+        help="Standaard: 17 jaar voor 1L-ZOAB, 13 jaar voor 2L-ZOAB"
+    )
+    custom_right = st.number_input(
+        "Levensduur rechter rijstrook (jaren)",
+        min_value=5,
+        max_value=30,
+        value=default_right,
+        help="Standaard: 11 jaar voor 1L-ZOAB, 9 jaar voor 2L-ZOAB"
+    )
 
-    st.subheader("Wegdek Specificaties")
-    opp_m2 = st.number_input("Oppervlakte wegdek ZOAB (m²)", min_value=100, value=70000, step=100)
-    type_wegdek = st.selectbox("Type wegdek", ["1L-ZOAB", "2L-ZOAB"])
-    locatie = st.selectbox("Locatie", ["Linker rijweg", "Rechter rijweg"])
-    leeftijd_asfalt = st.slider("Leeftijd huidig asfalt (jaar)", min_value=0, max_value=6, value=0)
-    jaren = st.slider("Duur simulatieperiode (jaren)", min_value=10, max_value=100, value=45)
+    opp_m2 = st.number_input("Totaal oppervlak wegdek (m²)", min_value=1000, value=70000, step=1000)
+    aantal_rijbanen = st.number_input("Aantal rijstroken", min_value=1, max_value=8, value=2)
+    leeftijd_asfalt = st.slider("Leeftijd huidig asfalt (jaar)", 0, 6, 0)
+    simulatieduur = st.slider("Contractsduur (jaren)", 10, 45, 45)
 
-    st.subheader("Kostenparameters")
+    st.markdown("<h3 style='color: #154273; font-size: 1.2rem; margin-top: 1rem;'>Kostenparameters</h3>", unsafe_allow_html=True)
+    vaste_kosten = st.number_input("Begeleidingskosten per onderhoudsactie (€)", min_value=0, value=200000, step=10000)
+
     with st.expander("Conventionele Aanpak", expanded=True):
-        kost_asfalt = st.number_input("Materiaal kosten asfalt (€/m²)", value=15.0)
-        kost_hinder_asfalt = st.number_input("Verkeershinderkosten asfalt (€/m²)", value=7.0)
+        kost_asfalt = st.number_input("Asfalt: Materiaalkosten (€/m²)", value=15.0)
+        kost_hinder_asfalt = st.number_input("Asfalt: Verkeershinderkosten (€/m²)", value=7.0)
 
     with st.expander("LVOv Behandeling", expanded=True):
-        kost_lvov = st.number_input("Materiaal kosten LVOv (€/m²)", value=2.5)
-        kost_hinder_lvov = st.number_input("Verkeershinderkosten LVOv (€/m²)", value=1.5)
+        kost_lvov = st.number_input("LVOv: Materiaalkosten (€/m²)", value=2.5)
+        kost_hinder_lvov = st.number_input("LVOv: Verkeershinderkosten (€/m²)", value=1.5)
 
-def bepaal_levensduur(type_wegdek, locatie):
-    matrix = {
-        ("1L-ZOAB", "Linker rijweg"): 17,
-        ("1L-ZOAB", "Rechter rijweg"): 11,
-        ("2L-ZOAB", "Linker rijweg"): 13,
-        ("2L-ZOAB", "Rechter rijweg"): 9
+
+# Levensduur lookup functie
+def bepaal_levensduur(type_wegdek, positie, custom_left=None, custom_right=None):
+    """Bepaalt de levensduur van het wegdek op basis van type en positie.
+    
+    Args:
+        type_wegdek: Type asfalt (ZOAB 0/8, ZOAB 0/11, DZOAB, Fijn ZOAB, ZOAB +)
+        positie: 'Linker rijweg' of 'Rechter rijweg'
+        custom_left: Aangepaste levensduur voor linker rijweg
+        custom_right: Aangepaste levensduur voor rechter rijweg
+    """
+    default_matrix = {
+        ("1L-ZOAB", "Linker rijstrook"): 17,
+        ("1L-ZOAB", "Rechter rijstrook"): 11,
+        ("2L-ZOAB", "Linker rijstrook"): 13,
+        ("2L-ZOAB", "Rechter rijstrook"): 9,
+        ("ZOAB 0/8", "Linker rijstrook"): 17,
+        ("ZOAB 0/8", "Rechter rijstrook"): 11,
+        ("ZOAB 0/11", "Linker rijstrook"): 18,
+        ("ZOAB 0/11", "Rechter rijstrook"): 12,
+        ("DZOAB", "Linker rijstrook"): 20,
+        ("DZOAB", "Rechter rijstrook"): 14,
+        ("Fijn ZOAB", "Linker rijstrook"): 15,
+        ("Fijn ZOAB", "Rechter rijstrook"): 10,
+        ("ZOAB +", "Linker rijstrook"): 14,
+        ("ZOAB +", "Rechter rijstrook"): 9
     }
-    return matrix.get((type_wegdek, locatie), 10)
-
-levensduur = bepaal_levensduur(type_wegdek, locatie)
-kosten_asfalt = (kost_asfalt + kost_hinder_asfalt) * opp_m2
-kosten_lvov = (kost_lvov + kost_hinder_lvov) * opp_m2
-co2_asfalt = 5 * opp_m2 / 1000
-co2_lvov = 1.5 * opp_m2 / 1000
-
-kosten_conv = np.zeros(jaren + 1)
-kosten_lvov_arr = np.zeros(jaren + 1)
-co2_conv = np.zeros(jaren + 1)
-co2_lvov_arr = np.zeros(jaren + 1)
-
-# ==== CONVENTIONELE STRATEGIE ====
-i = levensduur
-while i <= jaren:
-    kosten_conv[i] = kosten_asfalt
-    co2_conv[i] = co2_asfalt
-    i += levensduur
-
-# ==== LVOv STRATEGIE ====
-i = 6 - leeftijd_asfalt  # Eerste LVOv wanneer huidig asfalt 6 jaar oud wordt
-levensduur_huidig = levensduur
-
-while i <= jaren:
-    kosten_lvov_arr[i] = kosten_lvov
-    co2_lvov_arr[i] = co2_lvov
-    jaar_vervanging = i + levensduur_huidig
-    if jaar_vervanging <= jaren:
-        kosten_lvov_arr[jaar_vervanging] = kosten_asfalt
-        co2_lvov_arr[jaar_vervanging] = co2_asfalt
-        levensduur_huidig = levensduur + 3
-        i = jaar_vervanging + 6
+    
+    if positie == "Linker rijstrook" and custom_left is not None:
+        return custom_left
+    elif positie == "Rechter rijstrook" and custom_right is not None:
+        return custom_right
     else:
-        break
+        return default_matrix[(type_wegdek, positie)]
 
-kosten_conv_cum = np.cumsum(kosten_conv)
-kosten_lvov_cum = np.cumsum(kosten_lvov_arr)
-co2_conv_cum = np.cumsum(co2_conv)
-co2_lvov_cum = np.cumsum(co2_lvov_arr)
+def kosten_linker_baan_conventioneel(type_wegdek, duur, oppervlakte, vaste_kosten,
+                                     kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov,
+                                     leeftijd_asfalt=0):
+    """Simuleert jaarlijkse en cumulatieve kosten en CO₂-uitstoot voor conventionele strategie (linker rijstrook)."""
+    levensduur = bepaal_levensduur(type_wegdek, "Linker rijstrook", custom_left, custom_right)
+    jaarlijkse_kosten = [0] * duur
+    jaarlijkse_co2 = [0] * duur
+    cumulatieve_kosten = [0] * duur
+    cumulatieve_co2 = [0] * duur
 
-# st.title("Analysetool Asfaltonderhoud ZOAB-wegdek")   ⛔ deze regel NIET gebruiken
-st.markdown("<h1 style='color: #154273;'>Analysetool Asfaltonderhoud ZOAB-wegdek</h1>", unsafe_allow_html=True)
+    # Bereken eerste onderhoudsmoment op basis van huidige leeftijd
+    eerste_onderhoud = levensduur - leeftijd_asfalt
+    if eerste_onderhoud <= 0:
+        eerste_onderhoud = 1  # Als het asfalt al over de levensduur heen is, direct onderhoud
+
+    # Start with no costs in year 0
+    jaarlijkse_kosten[0] = 0
+    jaarlijkse_co2[0] = 0
+
+    # Conventionele strategie: vervang asfalt elke levensduur, begin vanaf eerste_onderhoud
+    for jaar in range(1, duur):
+        if jaar == eerste_onderhoud or (jaar > eerste_onderhoud and (jaar - eerste_onderhoud) % levensduur == 0):
+            jaarlijkse_kosten[jaar] = vaste_kosten + (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
+            jaarlijkse_co2[jaar] = oppervlakte * 0.05  # CO2 uitstoot per m2
+
+    # Bereken cumulatieve waarden
+    for jaar in range(duur):
+        if jaar == 0:
+            cumulatieve_kosten[jaar] = jaarlijkse_kosten[jaar]
+            cumulatieve_co2[jaar] = jaarlijkse_co2[jaar]
+        else:
+            cumulatieve_kosten[jaar] = cumulatieve_kosten[jaar-1] + jaarlijkse_kosten[jaar]
+            cumulatieve_co2[jaar] = cumulatieve_co2[jaar-1] + jaarlijkse_co2[jaar]
+
+    return jaarlijkse_kosten, cumulatieve_kosten, jaarlijkse_co2, cumulatieve_co2
+
+def kosten_rechter_baan_conventioneel(type_wegdek, duur, oppervlakte, vaste_kosten,
+                                     kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov,
+                                     leeftijd_asfalt=0):
+    """Simuleert jaarlijkse en cumulatieve kosten en CO₂-uitstoot voor conventionele strategie (rechter rijstrook)."""
+    levensduur = bepaal_levensduur(type_wegdek, "Rechter rijstrook", custom_left, custom_right)
+    jaarlijkse_kosten = [0] * duur
+    jaarlijkse_co2 = [0] * duur
+    cumulatieve_kosten = [0] * duur
+    cumulatieve_co2 = [0] * duur
+
+    # Bereken eerste onderhoudsmoment op basis van huidige leeftijd
+    eerste_onderhoud = levensduur - leeftijd_asfalt
+    if eerste_onderhoud <= 0:
+        eerste_onderhoud = 1  # Als het asfalt al over de levensduur heen is, direct onderhoud
+
+    # Start with no costs in year 0
+    jaarlijkse_kosten[0] = 0
+    jaarlijkse_co2[0] = 0
+
+    # Conventionele strategie: vervang asfalt elke levensduur, begin vanaf eerste_onderhoud
+    for jaar in range(1, duur):
+        if jaar == eerste_onderhoud or (jaar > eerste_onderhoud and (jaar - eerste_onderhoud) % levensduur == 0):
+            jaarlijkse_kosten[jaar] = vaste_kosten + (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
+            jaarlijkse_co2[jaar] = oppervlakte * 0.05  # CO2 uitstoot per m2
+
+    # Bereken cumulatieve waarden
+    for jaar in range(duur):
+        if jaar == 0:
+            cumulatieve_kosten[jaar] = jaarlijkse_kosten[jaar]
+            cumulatieve_co2[jaar] = jaarlijkse_co2[jaar]
+        else:
+            cumulatieve_kosten[jaar] = cumulatieve_kosten[jaar-1] + jaarlijkse_kosten[jaar]
+            cumulatieve_co2[jaar] = cumulatieve_co2[jaar-1] + jaarlijkse_co2[jaar]
+
+    return jaarlijkse_kosten, cumulatieve_kosten, jaarlijkse_co2, cumulatieve_co2
+
+def kosten_linker_baan_lvov(type_wegdek, duur, oppervlakte, vaste_kosten,
+                            kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov,
+                            leeftijd_asfalt=0):
+    """Simuleert jaarlijkse en cumulatieve kosten en CO₂-uitstoot voor LVOv-strategie (linker rijstrook)."""
+    levensduur = bepaal_levensduur(type_wegdek, "Linker rijstrook", custom_left, custom_right)
+    jaarlijkse_kosten = [0] * duur
+    jaarlijkse_co2 = [0] * duur
+    cumulatieve_kosten = [0] * duur
+    cumulatieve_co2 = [0] * duur
+    
+    # Bereken eerste onderhoudsmoment op basis van huidige leeftijd
+    eerste_onderhoud = 6 - leeftijd_asfalt  # LVOv start na 6 jaar
+    if eerste_onderhoud <= 0:
+        eerste_onderhoud = 1  # Als het asfalt al over de 6 jaar heen is, direct LVOv
+
+    # Start with no costs in year 0
+    jaarlijkse_kosten[0] = 0
+    jaarlijkse_co2[0] = 0
+
+    # LVOv strategie: begin na eerste_onderhoud (6 jaar - huidige leeftijd), herhaal elke 4 jaar
+    # In de laatste 8 jaar geen LVOv meer, alleen eindkosten
+    for jaar in range(1, duur):
+        if jaar >= eerste_onderhoud and (jaar - eerste_onderhoud) % 4 == 0 and jaar <= duur - 8:
+            jaarlijkse_kosten[jaar] = vaste_kosten + (oppervlakte * (kost_lvov + kost_hinder_lvov))
+            jaarlijkse_co2[jaar] = oppervlakte * 0.01  # CO2 uitstoot per m2
+        elif jaar == duur:
+            # Eindkosten in laatste jaar
+            jaarlijkse_kosten[jaar-1] = vaste_kosten + (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
+            jaarlijkse_co2[jaar-1] = oppervlakte * 0.05  # CO2 uitstoot per m2
+
+    # Bereken cumulatieve waarden
+    for jaar in range(duur):
+        if jaar == 0:
+            cumulatieve_kosten[jaar] = jaarlijkse_kosten[jaar]
+            cumulatieve_co2[jaar] = jaarlijkse_co2[jaar]
+        else:
+            cumulatieve_kosten[jaar] = cumulatieve_kosten[jaar-1] + jaarlijkse_kosten[jaar]
+            cumulatieve_co2[jaar] = cumulatieve_co2[jaar-1] + jaarlijkse_co2[jaar]
+
+    return jaarlijkse_kosten, cumulatieve_kosten, jaarlijkse_co2, cumulatieve_co2
+
+def kosten_rechter_baan_lvov(type_wegdek, duur, oppervlakte, vaste_kosten,
+                             kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov,
+                             leeftijd_asfalt=0):
+    """Simuleert jaarlijkse en cumulatieve kosten en CO₂-uitstoot voor LVOv-strategie (rechter rijstrook)."""
+    levensduur = bepaal_levensduur(type_wegdek, "Rechter rijstrook", custom_left, custom_right)
+    jaarlijkse_kosten = [0] * duur
+    jaarlijkse_co2 = [0] * duur
+    cumulatieve_kosten = [0] * duur
+    cumulatieve_co2 = [0] * duur
+    
+    # Bereken eerste onderhoudsmoment op basis van huidige leeftijd
+    eerste_onderhoud = 6 - leeftijd_asfalt  # LVOv start na 6 jaar
+    if eerste_onderhoud <= 0:
+        eerste_onderhoud = 1  # Als het asfalt al over de 6 jaar heen is, direct LVOv
+
+    # Start with no costs in year 0
+    jaarlijkse_kosten[0] = 0
+    jaarlijkse_co2[0] = 0
+
+    # LVOv strategie: begin na eerste_onderhoud (6 jaar - huidige leeftijd), herhaal elke 4 jaar
+    # In de laatste 8 jaar geen LVOv meer, alleen eindkosten
+    for jaar in range(1, duur):
+        if jaar >= eerste_onderhoud and (jaar - eerste_onderhoud) % 4 == 0 and jaar <= duur - 8:
+            jaarlijkse_kosten[jaar] = vaste_kosten + (oppervlakte * (kost_lvov + kost_hinder_lvov))
+            jaarlijkse_co2[jaar] = oppervlakte * 0.01  # CO2 uitstoot per m2
+        elif jaar == duur:
+            # Eindkosten in laatste jaar
+            jaarlijkse_kosten[jaar-1] = vaste_kosten + (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
+            jaarlijkse_co2[jaar-1] = oppervlakte * 0.05  # CO2 uitstoot per m2
+
+    # Bereken cumulatieve waarden
+    for jaar in range(duur):
+        if jaar == 0:
+            cumulatieve_kosten[jaar] = jaarlijkse_kosten[jaar]
+            cumulatieve_co2[jaar] = jaarlijkse_co2[jaar]
+        else:
+            cumulatieve_kosten[jaar] = cumulatieve_kosten[jaar-1] + jaarlijkse_kosten[jaar]
+            cumulatieve_co2[jaar] = cumulatieve_co2[jaar-1] + jaarlijkse_co2[jaar]
+
+    return jaarlijkse_kosten, cumulatieve_kosten, jaarlijkse_co2, cumulatieve_co2
+
+# ... (rest of the code remains the same)
+verdeling = {
+    1: (1.0, 0.0),
+    2: (0.5, 0.5),
+    3: (1/3, 2/3),
+    4: (0.25, 0.75),
+    5: (0.2, 0.8),
+    6: (1/6, 5/6),
+    7: (1/7, 6/7),
+    8: (0.125, 0.875)
+}
+perc_rechts, perc_links = verdeling[aantal_rijbanen]
+opp_rechts = opp_m2 * perc_rechts
+opp_links = opp_m2 * perc_links
+
+# Strategiekeuze
+duur = simulatieduur
+
+# == Conventioneel
+jr_k_r_conv, cum_k_r_conv, jr_c_r_conv, cum_c_r_conv = kosten_rechter_baan_conventioneel(
+    type_wegdek, simulatieduur, opp_rechts, vaste_kosten,
+    kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov,
+    leeftijd_asfalt
+)
+
+jr_k_l_conv, cum_k_l_conv, jr_c_l_conv, cum_c_l_conv = kosten_linker_baan_conventioneel(
+    type_wegdek, simulatieduur, opp_links, vaste_kosten,
+    kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov,
+    leeftijd_asfalt
+)
+
+kosten_conv = np.array(jr_k_r_conv) + np.array(jr_k_l_conv)
+kosten_conv_cum = np.array(cum_k_r_conv) + np.array(cum_k_l_conv)
+co2_conv = np.array(jr_c_r_conv) + np.array(jr_c_l_conv)
+co2_conv_cum = np.array(cum_c_r_conv) + np.array(cum_c_l_conv)
+
+# == LVOv
+jr_k_r_lvov, cum_k_r_lvov, jr_c_r_lvov, cum_c_r_lvov = kosten_rechter_baan_lvov(
+    type_wegdek, simulatieduur, opp_rechts, vaste_kosten,
+    kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov,
+    leeftijd_asfalt
+)
+
+jr_k_l_lvov, cum_k_l_lvov, jr_c_l_lvov, cum_c_l_lvov = kosten_linker_baan_lvov(
+    type_wegdek, simulatieduur, opp_links, vaste_kosten,
+    kost_asfalt, kost_hinder_asfalt, kost_lvov, kost_hinder_lvov,
+    leeftijd_asfalt
+)
+
+kosten_lvov = np.array(jr_k_r_lvov) + np.array(jr_k_l_lvov)
+kosten_lvov_cum = np.array(cum_k_r_lvov) + np.array(cum_k_l_lvov)
+co2_lvov = np.array(jr_c_r_lvov) + np.array(jr_c_l_lvov)
+co2_lvov_cum = np.array(cum_c_r_lvov) + np.array(cum_c_l_lvov)
+
+st.title("Analysetool Asfaltonderhoud ZOAB-wegdek")
 
 import streamlit.components.v1 as components
+
+levensduur_rechts = bepaal_levensduur(type_wegdek, "Rechter rijstrook")
+levensduur_links = bepaal_levensduur(type_wegdek, "Linker rijstrook")
 
 components.html(f"""
     <div style="
@@ -191,8 +449,8 @@ components.html(f"""
             font-family: Arial, sans-serif;
         ">
             <strong>Wegdek:</strong> {type_wegdek} |
-            <strong>Locatie:</strong> {locatie} |
-            <strong>Oppervlakte:</strong> {opp_m2:,} m²
+            <strong>Aantal rijstroken:</strong> {aantal_rijbanen} |
+            <strong>Oppervlakte:</strong> {opp_m2:,.0f} m²
         </p>
         <p style="
             color: #535353;
@@ -201,8 +459,8 @@ components.html(f"""
             font-family: Arial, sans-serif;
         ">
             <strong>Leeftijd huidig asfalt:</strong> {leeftijd_asfalt} jaar |
-            <strong>Simulatieduur:</strong> {jaren} jaar |
-            <strong>Levensduur:</strong> {levensduur} jaar
+            <strong>Contractsduur:</strong> {simulatieduur} jaar |
+            <strong>Levensduur:</strong> {levensduur_rechts} jr (rechter), {levensduur_links} jr (linker)
         </p>
     </div>
 """, height=180)
@@ -211,56 +469,75 @@ components.html(f"""
 
 
 
-st.header(f"Resultaten over {jaren} jaar")
+st.header(f"Resultaten over {simulatieduur} jaar")
 
 col1, col2 = st.columns(2)
 with col1:
     st.subheader("Financiële Impact")
-    st.metric("Conventionele aanpak", f"€{kosten_conv_cum[-1]:,.0f}")
-    st.metric("LVOv aanpak", f"€{kosten_lvov_cum[-1]:,.0f}")
+    st.metric("Conventioneel", f"€{kosten_conv_cum[-1]:,.0f}")
+    st.metric("LVOv", f"€{kosten_lvov_cum[-1]:,.0f}")
     besparing = kosten_conv_cum[-1] - kosten_lvov_cum[-1]
-    besparing_pct = (besparing / kosten_conv_cum[-1]) * 100
+    besparing_pct = 100 * besparing / kosten_conv_cum[-1] if kosten_conv_cum[-1] else 0
     st.metric("Besparing", f"€{besparing:,.0f}", f"{besparing_pct:.1f}%")
 
 with col2:
-    st.subheader("Milieu Impact")
-    st.metric("Conventionele aanpak", f"{co2_conv_cum[-1]:.1f} ton")
-    st.metric("LVOv aanpak", f"{co2_lvov_cum[-1]:.1f} ton")
+    st.subheader("Milieu Impact (CO₂)")
+    st.metric("Conventioneel", f"{co2_conv_cum[-1]:.1f} ton")
+    st.metric("LVOv", f"{co2_lvov_cum[-1]:.1f} ton")
     co2_besp = co2_conv_cum[-1] - co2_lvov_cum[-1]
-    co2_besp_pct = (co2_besp / co2_conv_cum[-1]) * 100
+    co2_besp_pct = 100 * co2_besp / co2_conv_cum[-1] if co2_conv_cum[-1] else 0
     st.metric("Besparing", f"{co2_besp:.1f} ton", f"{co2_besp_pct:.1f}%")
 
 st.header("Visualisaties")
 tab1, tab2, tab3 = st.tabs(["Cumulatieve Kosten", "Cumulatieve CO₂", "Jaarlijkse Kosten"])
 
+# Set style for all plots
+plt.rcParams['axes.labelcolor'] = '#154273'
+plt.rcParams['axes.titlecolor'] = '#154273'
+plt.rcParams['text.color'] = '#154273'
+
+
 with tab1:
-    fig1, ax1 = plt.subplots(figsize=(12, 6))
-    ax1.plot(range(jaren + 1), kosten_conv_cum, label="Conventioneel", color="#154273")
-    ax1.plot(range(jaren + 1), kosten_lvov_cum, label="LVOv", color="#FFD100")
+    fig1, ax1 = plt.subplots()
+    ax1.plot(kosten_conv_cum, label="Conventioneel")
+    ax1.plot(kosten_lvov_cum, label="LVOv")
+    ax1.set_title("Cumulatieve Kosten (€)")
     ax1.set_xlabel("Jaar")
-    ax1.set_ylabel("Cumulatieve kosten (€)")
-    ax1.grid(True, linestyle='--', alpha=0.7)
+    ax1.set_ylabel("€")
     ax1.legend()
     st.pyplot(fig1)
 
 with tab2:
-    fig2, ax2 = plt.subplots(figsize=(12, 6))
-    ax2.plot(range(jaren + 1), co2_conv_cum, label="Conventioneel", color="#154273")
-    ax2.plot(range(jaren + 1), co2_lvov_cum, label="LVOv", color="#FFD100")
+    fig2, ax2 = plt.subplots()
+    ax2.plot(co2_conv_cum, label="Conventioneel")
+    ax2.plot(co2_lvov_cum, label="LVOv")
+    ax2.set_title("Cumulatieve CO₂-uitstoot (ton)")
     ax2.set_xlabel("Jaar")
-    ax2.set_ylabel("Cumulatieve CO₂-uitstoot (ton)")
-    ax2.grid(True, linestyle='--', alpha=0.7)
+    ax2.set_ylabel("CO₂ (ton)")
     ax2.legend()
     st.pyplot(fig2)
 
 with tab3:
-    fig3, ax3 = plt.subplots(figsize=(12, 6))
-    x = range(jaren + 1)
-    width = 0.35
-    ax3.bar([i - width/2 for i in x], kosten_conv, width, label="Conventioneel", color="#154273", alpha=0.7)
-    ax3.bar([i + width/2 for i in x], kosten_lvov_arr, width, label="LVOv", color="#FFD100", alpha=0.7)
+    # Debug prints
+    st.write(f"Simulatieduur: {simulatieduur}")
+    st.write(f"Length kosten_conv: {len(kosten_conv)}")
+    st.write(f"Length kosten_lvov: {len(kosten_lvov)}")
+    
+    fig3, ax3 = plt.subplots()
+    jaren = np.arange(len(kosten_conv))  # Use length of data instead of simulatieduur
+    width = 0.4
+    
+    # Ensure both arrays have the same length
+    min_len = min(len(kosten_conv), len(kosten_lvov))
+    kosten_conv_plot = kosten_conv[:min_len]
+    kosten_lvov_plot = kosten_lvov[:min_len]
+    jaren = np.arange(min_len)
+    
+    ax3.bar(jaren - width/2, kosten_conv_plot, width, label="Conventioneel")
+    ax3.bar(jaren + width/2, kosten_lvov_plot, width, label="LVOv")
+    ax3.set_title("Jaarlijkse Kosten")
     ax3.set_xlabel("Jaar")
     ax3.set_ylabel("Kosten (€)")
-    ax3.grid(True, linestyle='--', alpha=0.7)
     ax3.legend()
+    ax3.grid(True, alpha=0.3)
     st.pyplot(fig3)
