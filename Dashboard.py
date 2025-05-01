@@ -1,8 +1,16 @@
-
-
 import streamlit as st
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+import base64
+
+# Encode logo image
+def get_base64_logo():
+    with open("NIEUW-RWS-3488526-v1-logo_RWS_ministerie_Infrastructuur_en_Waterstaat_NL.png", "rb") as f:
+        data = f.read()
+        return base64.b64encode(data).decode()
+
+base64_logo = get_base64_logo()
 
 # Configureer de pagina voor maximale breedte
 st.set_page_config(
@@ -18,7 +26,7 @@ st.markdown("""
     html, body, [class*="css"]  {
         background-color: #ffffff;
         color: #535353;
-        font-family: "Arial", sans-serif;
+        font-family: "RijksoverheidSans", "Rijksoverheid Sans", sans-serif;
     }
     .stApp {
         background-color: #ffffff;
@@ -27,20 +35,42 @@ st.markdown("""
     /* Headers styling */
     .css-10trblm {  /* Main title */
         color: #154273 !important;
-        font-family: "Arial", sans-serif !important;
-        font-weight: 600 !important;
+        font-family: "RijksoverheidSans", "Rijksoverheid Sans", sans-serif !important;
         font-size: 2.5rem !important;
+        font-weight: 600 !important;
+        letter-spacing: -0.5px !important;
+        line-height: 1.2 !important;
+        margin-bottom: 1.5rem !important;
+        padding: 1.5rem 0 !important;
+        border-bottom: 3px solid #154273 !important;
+        text-transform: none !important;
+    }
+
+    /* Title container */
+    .title-container {
+        margin-bottom: 2rem;
+        padding: 0.5rem 0;
+    }
+
+    /* Subtitle styling */
+    .subtitle {
+        color: #666666;
+        font-size: 1.2rem;
+        font-weight: 400;
+        margin-top: 0.5rem;
+        font-family: "RijksoverheidSans", "Rijksoverheid Sans", sans-serif;
+    }
     }
     .css-1629p8f {  /* Section headers */
         color: #154273 !important;
-        font-family: "Arial", sans-serif !important;
+        font-family: "RijksoverheidSans", "Rijksoverheid Sans", sans-serif !important;
         font-weight: 600 !important;
         font-size: 1.8rem !important;
     }
     /* Sidebar headers */
     .css-79elbk, .css-j7qwjs {  /* Sidebar headers */
         color: #154273 !important;
-        font-family: "Arial", sans-serif !important;
+        font-family: "RijksoverheidSans", "Rijksoverheid Sans", sans-serif !important;
         font-weight: 600 !important;
     }
     .css-79elbk {  /* Main sidebar header */
@@ -68,6 +98,7 @@ st.markdown("""
         color: #535353;
         font-size: 1rem;
         margin: 0.4rem 0;
+        font-family: "RijksoverheidSans", "Rijksoverheid Sans", sans-serif;
     }
 
     /* Tabs boven visualisaties */
@@ -113,14 +144,35 @@ st.markdown("""
         margin-bottom: 1rem;
         color: black !important;
     }
+
+    /* Logo styling */
+    [data-testid="stSidebarNav"] img {
+        background-color: #FFFDD8;
+        padding: 1rem;
+        border-radius: 0.5rem;
+    }
+
 </style>
 """, unsafe_allow_html=True)
 
 
 
 # ==== SIDEBAR PARAMETERS ====
+# Display title and subtitle with professional styling
+st.markdown("""
+<div class="title-container">
+    <h1 class="css-10trblm">Analysetool Asfaltonderhoud ZOAB-wegdek</h1>
+    <p class="subtitle">Vergelijkende analyse van conventionele en LVOv onderhoudsmethoden</p>
+</div>
+""", unsafe_allow_html=True)
+
 with st.sidebar:
-    st.image("NIEUW-RWS-3488526-v1-logo_RWS_ministerie_Infrastructuur_en_Waterstaat_NL.png", width=300)
+    # Display logo
+    st.markdown("""
+        <div style='margin-bottom: 1rem;'>
+            <img src='data:image/png;base64,{}' width='300'>
+        </div>
+    """.format(base64_logo), unsafe_allow_html=True)
     st.markdown("<h2 style='color: #154273; font-size: 1.5rem; margin-bottom: 1rem;'>Input Parameters</h2>", unsafe_allow_html=True)
     
     # Wegdek parameters
@@ -162,17 +214,17 @@ with st.sidebar:
     opp_m2 = st.number_input("Totaal oppervlak wegdek (m²)", min_value=1000, value=70000, step=1000)
     aantal_rijbanen = st.number_input("Aantal rijstroken", min_value=1, max_value=8, value=2)
     leeftijd_asfalt = st.slider("Leeftijd huidig asfalt (jaar)", 0, 6, 0)
-    simulatieduur = st.slider("Contractsduur (jaren)", 10, 45, 45)
+    simulatieduur = st.slider("Contractsduur Onderhoud(jaren)", 10, 45, 45)
 
     st.markdown("<h3 style='color: #154273; font-size: 1.2rem; margin-top: 1rem;'>Kostenparameters</h3>", unsafe_allow_html=True)
     vaste_kosten = st.number_input("Begeleidingskosten per onderhoudsactie (€)", min_value=0, value=200000, step=10000)
 
     with st.expander("Conventionele Aanpak", expanded=True):
-        kost_asfalt = st.number_input("Asfalt: Materiaalkosten (€/m²)", value=15.0)
+        kost_asfalt = st.number_input("Asfalt: Materiaalkosten (€/m²)", value=35.0)
         kost_hinder_asfalt = st.number_input("Asfalt: Verkeershinderkosten (€/m²)", value=7.0)
 
     with st.expander("LVOv Behandeling", expanded=True):
-        kost_lvov = st.number_input("LVOv: Materiaalkosten (€/m²)", value=2.5)
+        kost_lvov = st.number_input("LVOv: Materiaalkosten (€/m²)", value=1.5)
         kost_hinder_lvov = st.number_input("LVOv: Verkeershinderkosten (€/m²)", value=1.5)
 
 
@@ -232,8 +284,12 @@ def kosten_linker_baan_conventioneel(type_wegdek, duur, oppervlakte, vaste_koste
     # Conventionele strategie: vervang asfalt elke levensduur, begin vanaf eerste_onderhoud
     for jaar in range(1, duur):
         if jaar == eerste_onderhoud or (jaar > eerste_onderhoud and (jaar - eerste_onderhoud) % levensduur == 0):
-            jaarlijkse_kosten[jaar] = vaste_kosten + (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
-            jaarlijkse_co2[jaar] = oppervlakte * 0.05  # CO2 uitstoot per m2
+            # Only apply fixed costs if this is not a single lane road
+            if oppervlakte > 0:  # This means it's not a single lane road
+                jaarlijkse_kosten[jaar] = vaste_kosten + (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
+            else:
+                jaarlijkse_kosten[jaar] = oppervlakte * (kost_asfalt + kost_hinder_asfalt)
+            jaarlijkse_co2[jaar] = oppervlakte * 0.00693  # CO2 uitstoot per m2
 
     # Bereken cumulatieve waarden
     for jaar in range(duur):
@@ -269,7 +325,7 @@ def kosten_rechter_baan_conventioneel(type_wegdek, duur, oppervlakte, vaste_kost
     for jaar in range(1, duur):
         if jaar == eerste_onderhoud or (jaar > eerste_onderhoud and (jaar - eerste_onderhoud) % levensduur == 0):
             jaarlijkse_kosten[jaar] = vaste_kosten + (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
-            jaarlijkse_co2[jaar] = oppervlakte * 0.05  # CO2 uitstoot per m2
+            jaarlijkse_co2[jaar] = oppervlakte * 0.00693 # CO2 uitstoot per m2
 
     # Bereken cumulatieve waarden
     for jaar in range(duur):
@@ -305,12 +361,12 @@ def kosten_linker_baan_lvov(type_wegdek, duur, oppervlakte, vaste_kosten,
     # In de laatste 8 jaar geen LVOv meer, alleen eindkosten
     for jaar in range(1, duur):
         if jaar >= eerste_onderhoud and (jaar - eerste_onderhoud) % 4 == 0 and jaar <= duur - 8:
-            jaarlijkse_kosten[jaar] = vaste_kosten + (oppervlakte * (kost_lvov + kost_hinder_lvov))
-            jaarlijkse_co2[jaar] = oppervlakte * 0.01  # CO2 uitstoot per m2
+            jaarlijkse_kosten[jaar] = (oppervlakte * (kost_lvov + kost_hinder_lvov))
+            jaarlijkse_co2[jaar] = oppervlakte * 0.000291 # CO2 uitstoot per m2
         elif jaar == duur:
             # Eindkosten in laatste jaar
-            jaarlijkse_kosten[jaar-1] = vaste_kosten + (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
-            jaarlijkse_co2[jaar-1] = oppervlakte * 0.05  # CO2 uitstoot per m2
+            jaarlijkse_kosten[jaar-1] = (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
+            jaarlijkse_co2[jaar-1] = oppervlakte * 0.000291 # CO2 uitstoot per m2
 
     # Bereken cumulatieve waarden
     for jaar in range(duur):
@@ -347,11 +403,11 @@ def kosten_rechter_baan_lvov(type_wegdek, duur, oppervlakte, vaste_kosten,
     for jaar in range(1, duur):
         if jaar >= eerste_onderhoud and (jaar - eerste_onderhoud) % 4 == 0 and jaar <= duur - 8:
             jaarlijkse_kosten[jaar] = vaste_kosten + (oppervlakte * (kost_lvov + kost_hinder_lvov))
-            jaarlijkse_co2[jaar] = oppervlakte * 0.01  # CO2 uitstoot per m2
+            jaarlijkse_co2[jaar] = oppervlakte * 0.000291 # CO2 uitstoot per m2
         elif jaar == duur:
             # Eindkosten in laatste jaar
             jaarlijkse_kosten[jaar-1] = vaste_kosten + (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
-            jaarlijkse_co2[jaar-1] = oppervlakte * 0.05  # CO2 uitstoot per m2
+            jaarlijkse_co2[jaar-1] = oppervlakte * 0.000291  # CO2 uitstoot per m2
 
     # Bereken cumulatieve waarden
     for jaar in range(duur):
@@ -418,8 +474,6 @@ kosten_lvov_cum = np.array(cum_k_r_lvov) + np.array(cum_k_l_lvov)
 co2_lvov = np.array(jr_c_r_lvov) + np.array(jr_c_l_lvov)
 co2_lvov_cum = np.array(cum_c_r_lvov) + np.array(cum_c_l_lvov)
 
-st.title("Analysetool Asfaltonderhoud ZOAB-wegdek")
-
 import streamlit.components.v1 as components
 
 levensduur_rechts = bepaal_levensduur(type_wegdek, "Rechter rijstrook")
@@ -465,30 +519,314 @@ components.html(f"""
     </div>
 """, height=180)
 
+st.markdown("""
+<style>
+    .results-hero {
+        background-size: cover;
+        background-position: center;
+        position: relative;
+        padding: 4rem 0;
+        margin-bottom: 2rem;
+    }
+    .results-hero::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(rgba(255, 255, 255, 0.85), rgba(255, 255, 255, 0.85));
+    }
+    .hero-content {
+        position: relative;
+        z-index: 1;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+    .results-section { 
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 0 2rem;
+    }
+    .results-header { 
+        color: #154273;
+        text-align: center;
+        font-size: 3.5rem;
+        font-weight: 700;
+        margin-bottom: 1.5rem;
+        font-family: 'RijksoverheidSans', system-ui, -apple-system, sans-serif;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+    }
+    .explanation-text {
+        max-width: 800px;
+        margin: 0 auto;
+        text-align: center;
+    }
+    .explanation-text p {
+        font-size: 1.4rem;
+        line-height: 1.6;
+        color: #1f2937;
+        font-family: 'RijksoverheidSans', system-ui, -apple-system, sans-serif;
+        text-shadow: 0 1px 1px rgba(255, 255, 255, 0.5);
+    }
+    .main-card {
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .section-explanation {
+        margin-bottom: 1.5rem;
+    }
+    .section-explanation p {
+        font-size: 1rem;
+        line-height: 1.5;
+        color: #4b5563;
+        margin: 0;
+        font-family: 'RijksoverheidSans', system-ui, -apple-system, sans-serif;
+    }
+    .title-text {
+        color: #154273;
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0;
+        padding-bottom: 0.75rem;
+        margin-bottom: 2rem;
+        border-bottom: 4px solid #f5e251;
+        font-family: 'RijksoverheidSans', system-ui, -apple-system, sans-serif;
+        text-align: center;
+    }
+    .savings-card {
+        background: #f3f4f6;
+        border-radius: 8px;
+        padding: 1.5rem;
+    }
+    [data-testid='stMetricLabel'] {
+        font-size: 1rem !important;
+        color: #374151 !important;
+        font-weight: 500 !important;
+        line-height: 1.4 !important;
+        margin-bottom: 0.5rem !important;
+    }
+    [data-testid='stMetricValue'] {
+        font-size: 2.5rem !important;
+    }
+    [data-testid='stMetricValue'] > div {
+        font-size: 2.5rem !important;
+        font-weight: 700 !important;
+        font-family: 'RijksoverheidSans', system-ui, -apple-system, sans-serif !important;
+        color: #154273 !important;
+    }
+    [data-testid='stMetricDelta'] > div {
+        font-size: 1.1rem !important;
+        font-weight: 600 !important;
+        color: #16a34a !important;
+    }
+    div[data-testid='metric-container'] {
+        gap: 0.25rem !important;
+        padding: 0.75rem 0 !important;
+        border-bottom: 1px solid #e5e7eb !important;
+    }
+    div[data-testid='metric-container']:last-child {
+        border-bottom: none !important;
+        padding-bottom: 0 !important;
+    }
+    div[data-testid='stHorizontalBlock'] > div {
+        gap: 2rem !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Load and encode the background image
+from pathlib import Path
+import base64
+
+def get_base64_encoded_image(image_path):
+    with open(image_path, "rb") as img_file:
+        return base64.b64encode(img_file.read()).decode()
+
+# Get the background image
+img_path = Path(__file__).parent / "Nederlandse-snelwegen_2.jpg"
+encoded_img = get_base64_encoded_image(str(img_path))
+
+# Create results section with background
+st.markdown(f'''
+<div class="results-hero" style="background-image: url(data:image/jpg;base64,{encoded_img});">
+    <div class="hero-content">
+        <h2 class="results-header">Resultaten over {simulatieduur} jaar</h2>
+        <div class="explanation-text">
+            <p>Deze resultaten tonen de vergelijking tussen de conventionele aanpak en de innovatieve LVOv methode voor wegonderhoud. 
+            De berekeningen zijn gebaseerd op een periode van meerdere jaren en houden rekening met zowel financiële als milieu-impact.</p>
+        </div>
+    </div>
+</div>
+<div class="results-section">
+''', unsafe_allow_html=True)
 
 
+st.header("Resultaten")
 
+# Add table styling
+st.markdown("""
+<style>
+    .section-title {
+        color: #154273;
+        font-size: 2rem;
+        font-weight: 600;
+        margin: 2rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid #154273;
+        display: inline-block;
+    }
+    .section-description {
+        color: #535353;
+        font-size: 1rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+    .financial-table {
+        width: 100%;
+        margin: 1.5rem 0 3rem 0;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 8px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .financial-table th {
+        background-color: #154273;
+        color: white;
+        padding: 16px;
+        text-align: left;
+        font-size: 1.4rem;
+    }
+    .financial-table td {
+        background-color: #f8f9fa;
+        padding: 16px;
+        border-bottom: 1px solid #dee2e6;
+        font-size: 1.4rem;
+    }
+    .financial-table tr:last-child td {
+        font-weight: bold;
+        background-color: #FFFDD8;
+        border-bottom: none;
+    }
+    .financial-table tr:hover td {
+        background-color: #f0f0f0;
+    }
+    .financial-table tr:last-child:hover td {
+        background-color: #fff5b8;
+    }
+</style>
+""", unsafe_allow_html=True)
 
-st.header(f"Resultaten over {simulatieduur} jaar")
+# Financial Impact Section
+st.markdown("""
+<div class='section-title'>Financiële Impact Analyse</div>
+<div class='section-description'>
+Deze tabel toont een vergelijking van de totale kosten tussen de conventionele aanpak en de LVOv-methode over de gehele simulatieperiode. 
+De berekeningen omvatten zowel materiaalkosten als verkeershinderkosten. De 'Besparing met LVOv' regel laat zien hoeveel er potentieel 
+bespaard kan worden door te kiezen voor de LVOv-aanpak.
+</div>
+""", unsafe_allow_html=True)
 
-col1, col2 = st.columns(2)
-with col1:
-    st.subheader("Financiële Impact")
-    st.metric("Conventioneel", f"€{kosten_conv_cum[-1]:,.0f}")
-    st.metric("LVOv", f"€{kosten_lvov_cum[-1]:,.0f}")
-    besparing = kosten_conv_cum[-1] - kosten_lvov_cum[-1]
-    besparing_pct = 100 * besparing / kosten_conv_cum[-1] if kosten_conv_cum[-1] else 0
-    st.metric("Besparing", f"€{besparing:,.0f}", f"{besparing_pct:.1f}%")
+# Calculate financial savings percentage
+kosten_besp_pct = ((kosten_conv_cum[-1] - kosten_lvov_cum[-1]) / kosten_conv_cum[-1]) * 100
 
-with col2:
-    st.subheader("Milieu Impact (CO₂)")
-    st.metric("Conventioneel", f"{co2_conv_cum[-1]:.1f} ton")
-    st.metric("LVOv", f"{co2_lvov_cum[-1]:.1f} ton")
-    co2_besp = co2_conv_cum[-1] - co2_lvov_cum[-1]
-    co2_besp_pct = 100 * co2_besp / co2_conv_cum[-1] if co2_conv_cum[-1] else 0
-    st.metric("Besparing", f"{co2_besp:.1f} ton", f"{co2_besp_pct:.1f}%")
+financial_data = {
+    'Aanpak': ['Conventioneel', 'LVOv', 'Besparing met LVOv'],
+    'Totale Kosten': [
+        f"€{kosten_conv_cum[-1]:,.0f}",
+        f"€{kosten_lvov_cum[-1]:,.0f}",
+        f"€{kosten_conv_cum[-1] - kosten_lvov_cum[-1]:,.0f} <span style='color: #28a745; margin-left: 10px;'>({kosten_besp_pct:.1f}%)</span>"
+    ]
+}
 
-st.header("Visualisaties")
+st.markdown("""
+<table class='financial-table'>
+    <tr>
+        <th>Aanpak</th>
+        <th>Totale Kosten</th>
+    </tr>
+    <tr>
+        <td>{}</td>
+        <td>{}</td>
+    </tr>
+    <tr>
+        <td>{}</td>
+        <td>{}</td>
+    </tr>
+    <tr>
+        <td>{}</td>
+        <td>{}</td>
+    </tr>
+</table>
+""".format(
+    financial_data['Aanpak'][0], financial_data['Totale Kosten'][0],
+    financial_data['Aanpak'][1], financial_data['Totale Kosten'][1],
+    financial_data['Aanpak'][2], financial_data['Totale Kosten'][2]
+), unsafe_allow_html=True)
+
+# Environmental Impact Section
+st.markdown("""
+<div class='section-title'>Milieu Impact Analyse</div>
+<div class='section-description'>
+Deze tabel vergelijkt de CO₂-uitstoot van beide onderhoudsmethoden gedurende de simulatieperiode. De berekeningen zijn gebaseerd 
+op de totale uitstoot tijdens onderhoudsactiviteiten, inclusief materiaalproductie en verkeershinder. De 'Besparing met LVOv' toont 
+de potentiële CO₂-reductie die bereikt kan worden met de LVOv-methode.
+</div>
+""", unsafe_allow_html=True)
+
+# Calculate CO2 savings percentage
+co2_besp_pct = ((co2_conv_cum[-1] - co2_lvov_cum[-1]) / co2_conv_cum[-1]) * 100
+
+environmental_data = {
+    'Aanpak': ['Conventioneel', 'LVOv', 'Besparing met LVOv'],
+    'CO₂ Uitstoot': [
+        f"{co2_conv_cum[-1]:,.0f} ton",
+        f"{co2_lvov_cum[-1]:,.0f} ton",
+        f"{co2_conv_cum[-1] - co2_lvov_cum[-1]:,.0f} ton <span style='color: #28a745; margin-left: 10px;'>({co2_besp_pct:.1f}%)</span>"
+    ]
+}
+
+st.markdown("""
+<table class='financial-table'>
+    <tr>
+        <th>Aanpak</th>
+        <th>CO₂ Uitstoot</th>
+    </tr>
+    <tr>
+        <td>{}</td>
+        <td>{}</td>
+    </tr>
+    <tr>
+        <td>{}</td>
+        <td>{}</td>
+    </tr>
+    <tr>
+        <td>{}</td>
+        <td>{}</td>
+    </tr>
+</table>
+""".format(
+    environmental_data['Aanpak'][0], environmental_data['CO₂ Uitstoot'][0],
+    environmental_data['Aanpak'][1], environmental_data['CO₂ Uitstoot'][1],
+    environmental_data['Aanpak'][2], environmental_data['CO₂ Uitstoot'][2]
+), unsafe_allow_html=True)
+
+st.markdown("""
+<style>
+    .graph-header {
+        color: #154273;
+        font-size: 1.8rem;
+        font-weight: 600;
+        margin: 2rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 3px solid #FFFDD8;
+    }
+</style>
+<div class='graph-header'>Visualisaties</div>
+""", unsafe_allow_html=True)
+
 tab1, tab2, tab3 = st.tabs(["Cumulatieve Kosten", "Cumulatieve CO₂", "Jaarlijkse Kosten"])
 
 # Set style for all plots
@@ -496,48 +834,244 @@ plt.rcParams['axes.labelcolor'] = '#154273'
 plt.rcParams['axes.titlecolor'] = '#154273'
 plt.rcParams['text.color'] = '#154273'
 
+# Configure matplotlib
+plt.rcParams['font.family'] = 'sans-serif'
+plt.rcParams['font.sans-serif'] = ['Arial']
+plt.rcParams['axes.labelcolor'] = '#154273'
+plt.rcParams['axes.titlecolor'] = '#154273'
+plt.rcParams['text.color'] = '#154273'
+plt.rcParams['axes.grid'] = True
+plt.rcParams['grid.alpha'] = 0.3
+
+# Create years array for x-axis
+jaren = list(range(simulatieduur))  # 0 to simulatieduur-1
 
 with tab1:
-    fig1, ax1 = plt.subplots()
-    ax1.plot(kosten_conv_cum, label="Conventioneel")
-    ax1.plot(kosten_lvov_cum, label="LVOv")
-    ax1.set_title("Cumulatieve Kosten (€)")
-    ax1.set_xlabel("Jaar")
-    ax1.set_ylabel("€")
-    ax1.legend()
-    st.pyplot(fig1)
+    fig_costs, ax_costs = plt.subplots(figsize=(10, 6))
+
+    # Plot lines
+    ax_costs.plot(jaren, kosten_conv_cum, label='Conventioneel', color='#154273', linewidth=2.5)
+    ax_costs.plot(jaren, kosten_lvov_cum, label='LVOv', color='#f5e251', linewidth=2.5)
+
+    # Customize title and labels
+    ax_costs.set_title('Cumulatieve kosten over tijd', pad=20, fontsize=14, fontweight='bold')
+    ax_costs.set_xlabel('Jaar', fontsize=12)
+    ax_costs.set_ylabel('Kosten (€)', fontsize=12)
+
+    # Customize grid
+    ax_costs.grid(True, linestyle='--', alpha=0.7)
+
+    # Customize legend
+    ax_costs.legend(frameon=True, fancybox=True, shadow=True, fontsize=10)
+
+    # Format y-axis as currency
+    fmt = ticker.FuncFormatter(lambda x, p: f'€{int(x):,}')
+    ax_costs.yaxis.set_major_formatter(fmt)
+
+    # Add spines (borders)
+    for spine in ax_costs.spines.values():
+        spine.set_visible(True)
+        spine.set_linewidth(0.5)
+
+    # Customize ticks
+    ax_costs.tick_params(axis='both', which='major', labelsize=10)
+    plt.xticks(rotation=45)
+
+    # Set background color
+    ax_costs.set_facecolor('#f8f9fa')
+    fig_costs.patch.set_facecolor('#ffffff')
+
+    # Add subtle box around plot
+    ax_costs.set_frame_on(True)
+    ax_costs.patch.set_edgecolor('#e5e7eb')
+    ax_costs.patch.set_linewidth(1)
+
+    # Adjust layout
+    plt.tight_layout()
+
+    # Display the plot in Streamlit with custom CSS
+    st.markdown('''
+    <style>
+        [data-testid="stImage"], [data-testid="stImage"] > img {
+            background-color: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+    </style>
+    ''', unsafe_allow_html=True)
+
+    st.pyplot(fig_costs)
 
 with tab2:
-    fig2, ax2 = plt.subplots()
-    ax2.plot(co2_conv_cum, label="Conventioneel")
-    ax2.plot(co2_lvov_cum, label="LVOv")
-    ax2.set_title("Cumulatieve CO₂-uitstoot (ton)")
-    ax2.set_xlabel("Jaar")
-    ax2.set_ylabel("CO₂ (ton)")
-    ax2.legend()
-    st.pyplot(fig2)
+    fig_co2, ax_co2 = plt.subplots(figsize=(10, 6))
+
+    # Plot lines
+    ax_co2.plot(jaren, co2_conv_cum, label='Conventioneel', color='#154273', linewidth=2.5)
+    ax_co2.plot(jaren, co2_lvov_cum, label='LVOv', color='#f5e251', linewidth=2.5)
+
+    # Customize title and labels
+    ax_co2.set_title('Cumulatieve CO$_2$ uitstoot over tijd', pad=20, fontsize=14, fontweight='bold')
+    ax_co2.set_xlabel('Jaar', fontsize=12)
+    ax_co2.set_ylabel('CO$_2$ uitstoot (ton)', fontsize=12)
+
+    # Customize grid
+    ax_co2.grid(True, linestyle='--', alpha=0.7)
+
+    # Customize legend
+    ax_co2.legend(frameon=True, fancybox=True, shadow=True, fontsize=10)
+
+    # Format y-axis
+    fmt = ticker.FuncFormatter(lambda x, p: f'{int(x):,}')
+    ax_co2.yaxis.set_major_formatter(fmt)
+
+    # Add spines (borders)
+    for spine in ax_co2.spines.values():
+        spine.set_visible(True)
+        spine.set_linewidth(0.5)
+
+    # Customize ticks
+    ax_co2.tick_params(axis='both', which='major', labelsize=10)
+    plt.xticks(rotation=45)
+
+    # Set background color
+    ax_co2.set_facecolor('#f8f9fa')
+    fig_co2.patch.set_facecolor('#ffffff')
+
+    # Add subtle box around plot
+    ax_co2.set_frame_on(True)
+    ax_co2.patch.set_edgecolor('#e5e7eb')
+    ax_co2.patch.set_linewidth(1)
+
+    # Adjust layout
+    plt.tight_layout()
+
+    # Display the plot in Streamlit
+    st.pyplot(fig_co2)
 
 with tab3:
-    # Debug prints
-    st.write(f"Simulatieduur: {simulatieduur}")
-    st.write(f"Length kosten_conv: {len(kosten_conv)}")
-    st.write(f"Length kosten_lvov: {len(kosten_lvov)}")
-    
-    fig3, ax3 = plt.subplots()
-    jaren = np.arange(len(kosten_conv))  # Use length of data instead of simulatieduur
-    width = 0.4
+    fig_yearly, ax_yearly = plt.subplots(figsize=(10, 6))
     
     # Ensure both arrays have the same length
     min_len = min(len(kosten_conv), len(kosten_lvov))
     kosten_conv_plot = kosten_conv[:min_len]
     kosten_lvov_plot = kosten_lvov[:min_len]
     jaren = np.arange(min_len)
+    width = 0.4
     
-    ax3.bar(jaren - width/2, kosten_conv_plot, width, label="Conventioneel")
-    ax3.bar(jaren + width/2, kosten_lvov_plot, width, label="LVOv")
-    ax3.set_title("Jaarlijkse Kosten")
-    ax3.set_xlabel("Jaar")
-    ax3.set_ylabel("Kosten (€)")
-    ax3.legend()
-    ax3.grid(True, alpha=0.3)
-    st.pyplot(fig3)
+    # Plot bars
+    ax_yearly.bar(jaren - width/2, kosten_conv_plot, width, label='Conventioneel', color='#154273')
+    ax_yearly.bar(jaren + width/2, kosten_lvov_plot, width, label='LVOv', color='#f5e251')
+    
+    # Customize title and labels
+    ax_yearly.set_title('Jaarlijkse kosten per aanpak', pad=20, fontsize=14, fontweight='bold')
+    ax_yearly.set_xlabel('Jaar', fontsize=12)
+    ax_yearly.set_ylabel('Kosten (€)', fontsize=12)
+    
+    # Customize grid
+    ax_yearly.grid(True, linestyle='--', alpha=0.7, axis='y')  # Only horizontal grid lines
+    
+    # Customize legend
+    ax_yearly.legend(frameon=True, fancybox=True, shadow=True, fontsize=10)
+    
+    # Format y-axis as currency
+    fmt = ticker.FuncFormatter(lambda x, p: f'€{int(x):,}')
+    ax_yearly.yaxis.set_major_formatter(fmt)
+    
+    # Add spines (borders)
+    for spine in ax_yearly.spines.values():
+        spine.set_visible(True)
+        spine.set_linewidth(0.5)
+    
+    # Customize ticks
+    ax_yearly.tick_params(axis='both', which='major', labelsize=10)
+    plt.xticks(jaren, jaren, rotation=45)
+    
+    # Set background color
+    ax_yearly.set_facecolor('#f8f9fa')
+    fig_yearly.patch.set_facecolor('#ffffff')
+    
+    # Add subtle box around plot
+    ax_yearly.set_frame_on(True)
+    ax_yearly.patch.set_edgecolor('#e5e7eb')
+    ax_yearly.patch.set_linewidth(1)
+    
+    # Adjust layout
+    plt.tight_layout()
+    
+    # Display the plot in Streamlit
+    st.pyplot(fig_yearly)
+
+# Add tables below all graphs
+st.markdown("""<hr style='margin: 2rem 0; border-color: #dee2e6;'>""", unsafe_allow_html=True)
+
+# Table 1: Average costs and CO2 emissions
+st.markdown('<div class="section-title">Gemiddelde Kosten en CO₂ Uitstoot per Jaar</div>', unsafe_allow_html=True)
+
+# Calculate averages
+avg_cost_conv = np.mean(kosten_conv)
+avg_cost_lvov = np.mean(kosten_lvov)
+avg_co2_conv = np.mean(co2_conv)
+avg_co2_lvov = np.mean(co2_lvov)
+
+# Add specific styling for bottom tables
+st.markdown("""
+<style>
+    .bottom-table tr:hover td {
+        background-color: #f8f9fa !important;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Create averages table HTML
+avg_table_html = '<table class="financial-table bottom-table"><thead><tr>'
+avg_table_html += '<th>Methode</th><th>Gemiddelde Kosten per Jaar</th><th>Gemiddelde CO₂ Uitstoot per Jaar (ton)</th>'
+avg_table_html += '</tr></thead><tbody>'
+
+# Add conventional row
+avg_table_html += f'<tr>'
+avg_table_html += f'<td>Conventioneel</td>'
+avg_table_html += f'<td>€{avg_cost_conv:,.0f}</td>'
+avg_table_html += f'<td>{avg_co2_conv:.1f}</td>'
+avg_table_html += '</tr>'
+
+# Add LVOv row
+avg_table_html += f'<tr>'
+avg_table_html += f'<td>LVOv</td>'
+avg_table_html += f'<td>€{avg_cost_lvov:,.0f}</td>'
+avg_table_html += f'<td>{avg_co2_lvov:.1f}</td>'
+avg_table_html += '</tr>'
+
+avg_table_html += '</tbody></table>'
+st.markdown(avg_table_html, unsafe_allow_html=True)
+
+# Table 2: Yearly costs comparison
+st.markdown("""<div style='margin-top: 2rem;'></div>""", unsafe_allow_html=True)
+st.markdown('<div class="section-title">Jaarlijkse Kosten Vergelijking</div>', unsafe_allow_html=True)
+
+# Create yearly costs comparison table
+yearly_data = []
+for i, (conv, lvov) in enumerate(zip(kosten_conv, kosten_lvov)):
+    yearly_data.append({
+        'Jaar': i,
+        'Conventioneel': conv,
+        'LVOv': lvov
+    })
+
+# Convert to HTML table
+yearly_table_html = '<table class="financial-table bottom-table"><thead><tr>'
+yearly_table_html += '<th>Jaar</th><th>Conventioneel (€)</th><th>LVOv (€)</th>'
+yearly_table_html += '</tr></thead><tbody>'
+
+for row in yearly_data:
+    yearly_table_html += f'<tr>'
+    yearly_table_html += f'<td>{row["Jaar"]}</td>'
+    # Color conventional costs
+    conv_color = '#dc3545' if row["Conventioneel"] > 0 else '#000000'
+    yearly_table_html += f'<td style="color: {conv_color}">€{row["Conventioneel"]:,.0f}</td>'
+    # Color LVOv costs
+    lvov_color = '#dc3545' if row["LVOv"] > 0 else '#000000'
+    yearly_table_html += f'<td style="color: {lvov_color}">€{row["LVOv"]:,.0f}</td>'
+    yearly_table_html += '</tr>'
+
+yearly_table_html += '</tbody></table>'
+st.markdown(yearly_table_html, unsafe_allow_html=True)
