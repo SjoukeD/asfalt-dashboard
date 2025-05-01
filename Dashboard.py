@@ -216,6 +216,24 @@ with st.sidebar:
     leeftijd_asfalt = st.slider("Leeftijd huidig asfalt (jaar)", 0, 6, 0)
     simulatieduur = st.slider("Contractsduur Onderhoud(jaren)", 10, 45, 45)
 
+    # CO2 uitstoot parameters
+    co2_conv = st.number_input(
+        "CO₂ uitstoot per m² voor conventionele behandeling (ton)",
+        min_value=0.0,
+        max_value=0.1,
+        value=0.00693,
+        step=0.00001,
+        format="%.5f"
+    )
+    co2_lvov = st.number_input(
+        "CO₂ uitstoot per m² voor LVOv behandeling (ton)",
+        min_value=0.0,
+        max_value=0.1,
+        value=0.000291,
+        step=0.00001,
+        format="%.5f"
+    )
+
     st.markdown("<h3 style='color: #154273; font-size: 1.2rem; margin-top: 1rem;'>Kostenparameters</h3>", unsafe_allow_html=True)
     vaste_kosten = st.number_input("Begeleidingskosten per onderhoudsactie (€)", min_value=0, value=200000, step=10000)
 
@@ -289,7 +307,7 @@ def kosten_linker_baan_conventioneel(type_wegdek, duur, oppervlakte, vaste_koste
                 jaarlijkse_kosten[jaar] = vaste_kosten + (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
             else:
                 jaarlijkse_kosten[jaar] = oppervlakte * (kost_asfalt + kost_hinder_asfalt)
-            jaarlijkse_co2[jaar] = oppervlakte * 0.00693  # CO2 uitstoot per m2
+            jaarlijkse_co2[jaar] = oppervlakte * co2_conv  # CO2 uitstoot per m2
 
     # Bereken cumulatieve waarden
     for jaar in range(duur):
@@ -362,11 +380,11 @@ def kosten_linker_baan_lvov(type_wegdek, duur, oppervlakte, vaste_kosten,
     for jaar in range(1, duur):
         if jaar >= eerste_onderhoud and (jaar - eerste_onderhoud) % 4 == 0 and jaar <= duur - 8:
             jaarlijkse_kosten[jaar] = (oppervlakte * (kost_lvov + kost_hinder_lvov))
-            jaarlijkse_co2[jaar] = oppervlakte * 0.000291 # CO2 uitstoot per m2
+            jaarlijkse_co2[jaar] = oppervlakte * co2_lvov # CO2 uitstoot per m2
         elif jaar == duur:
             # Eindkosten in laatste jaar
             jaarlijkse_kosten[jaar-1] = (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
-            jaarlijkse_co2[jaar-1] = oppervlakte * 0.000291 # CO2 uitstoot per m2
+            jaarlijkse_co2[jaar] = oppervlakte * co2_lvov # CO2 uitstoot per m2
 
     # Bereken cumulatieve waarden
     for jaar in range(duur):
@@ -403,7 +421,7 @@ def kosten_rechter_baan_lvov(type_wegdek, duur, oppervlakte, vaste_kosten,
     for jaar in range(1, duur):
         if jaar >= eerste_onderhoud and (jaar - eerste_onderhoud) % 4 == 0 and jaar <= duur - 8:
             jaarlijkse_kosten[jaar] = vaste_kosten + (oppervlakte * (kost_lvov + kost_hinder_lvov))
-            jaarlijkse_co2[jaar] = oppervlakte * 0.000291 # CO2 uitstoot per m2
+            jaarlijkse_co2[jaar] = oppervlakte * co2_lvov # CO2 uitstoot per m2
         elif jaar == duur:
             # Eindkosten in laatste jaar
             jaarlijkse_kosten[jaar-1] = vaste_kosten + (oppervlakte * (kost_asfalt + kost_hinder_asfalt))
