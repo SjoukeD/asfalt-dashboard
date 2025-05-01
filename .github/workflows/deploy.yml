@@ -21,9 +21,10 @@ jobs:
         password: ${{ secrets.AZURE_PASSWORD  }}
 
     - name: Build and push Docker image
-      run: |
-        docker build -t asfaltregistry.azurecr.io/asfaltcalculator:latest .
-        docker push asfaltregistry.azurecr.io/asfaltcalculator:latest
+  run: |
+    docker build -t asfaltregistry.azurecr.io/asfaltcalculator:latest "Esha Dashboard"
+    docker push asfaltregistry.azurecr.io/asfaltcalculator:latest
+
 
     - name: Deploy to Azure Web App
       uses: azure/webapps-deploy@v2
