@@ -1,0 +1,17 @@
+# Gebruik een slanke Python-image
+FROM python:3.10-slim
+
+# Stel de werkdirectory in
+WORKDIR /app
+
+# Kopieer alle bestanden uit je projectmap naar de container
+COPY . /app
+
+# Installeer de vereiste Python-pakketten
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+# Open poort 8501 (de standaard voor Streamlit)
+EXPOSE 8501
+
+# Start Streamlit automatisch wanneer de container draait
+CMD ["streamlit", "run", "Dashboard.py", "--server.port=8501", "--server.enableCORS=false", "--server.enableXsrfProtection=false"]
